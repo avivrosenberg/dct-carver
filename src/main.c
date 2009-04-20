@@ -51,7 +51,7 @@ const PlugInUIVals default_ui_vals =
   TRUE
 };
 
-static 	PlugInVals			vals;
+	 	PlugInVals			vals;
 static 	PlugInImageVals		image_vals;
 static 	PlugInDrawableVals	drawable_vals;
 static 	PlugInUIVals		ui_vals;
@@ -142,7 +142,9 @@ run (const gchar      *name,
   ui_vals       = default_ui_vals;
 
   init_dctatomdb(&dctAtomDB, vals.blocksize);
-
+  atomdb_free(dctAtomDB);
+  init_dctatomdb(&dctAtomDB, vals.blocksize);
+  
   switch (run_mode)
     {
     case GIMP_RUN_NONINTERACTIVE:

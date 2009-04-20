@@ -13,16 +13,17 @@
 /* 	Private functions */
 
 static void
-init_mem (guchar ***row,
+init_mem (gint blocksize,
+		  guchar ***row,
           guchar  **outrow,
           gint      num_bytes)
 {
   gint i;
 
   /* Allocate enough memory for row and outrow */
-  *row = g_new (guchar *, BLOCK_SIZE);
+  *row = g_new (guchar *, blocksize);
 
-  for (i = 0; i < BLOCK_SIZE; i++)
+  for (i = 0; i < blocksize; i++)
     (*row)[i] = g_new (guchar, num_bytes);
 
   *outrow = g_new (guchar, num_bytes);
@@ -39,12 +40,13 @@ process_row (guchar **row,
              gboolean *is_first_row)
 {
   gint j;
+  gint blocksize = dctAtomDB.blocksize;
 
   for (j = 0; j < width; j++)
     {
       gint k, ii, jj;
-      gint left = j - (CENTER_COL-1),
-           right = j + BLOCK_SIZE - CENTER_COL;
+      gint left = j - (CENTER_COL(blocksize)-1),
+           right = j + blocksize - CENTER_COL(blocksize);
 
       /* For each layer, compute the maximum product of the
        * (BLOCK_SIZE-1)x(BLOCK_SIZE-1) pixels with the DCT atoms*/
@@ -54,22 +56,14 @@ process_row (guchar **row,
         gdouble min_in_pixel;
         gint k1,k2;
         gint max_index = 0;
-		for (k1 = 0; k1 < BLOCK_SIZE; k1++)
+		for (k1 = 0; k1 < blocksize; k1++)
 		  {
-		  for (k2 = 0; k2 < BLOCK_SIZE; k2++)
+		  for (k2 = 0; k2 < blocksize; k2++)
 		    {
 		 	  if((!k1)&&(!k2)) continue;
 		 	  gdouble sum = 0;
-		 	      
-  				///* ****** */
-  				//printf("PF1\n");
-  				///* ****** */
 		 	  DCTAtom atom = get_atom(dctAtomDB,k1,k2);
-		 	      
-  				///* ****** */
-  				//printf("PF2\n");
-  				///* ****** */
-              for (ii = 0; ii < BLOCK_SIZE; ii++) {
+              for (ii = 0; ii < blocksize; ii++) {
                 for (jj = left; jj <= right; jj++)
                   {
                   	gint x = ii; gint y = jj-left;
@@ -83,7 +77,7 @@ process_row (guchar **row,
 			  }
 		      if (ABS(sum)>max_in_pixel) { 
 		      	max_in_pixel = ABS(sum);
-		      	max_index = (k1*BLOCK_SIZE+k2);
+		      	max_index = (k1*blocksize+k2);
 		      	}
 		      if ((k1==0)&&(k2==0)) { min_in_pixel = ABS(sum); }
 		      else if(ABS(sum)<min_in_pixel) { min_in_pixel = ABS(sum); }
@@ -112,18 +106,19 @@ shuffle (GimpPixelRgn *rgn_in,
 {
   gint    i;
   guchar *tmp_row;
+  gint blocksize = dctAtomDB.blocksize;
 
   /* Get tile row (i + BLOCK_SIZE + 1) into row[0] */
   gimp_pixel_rgn_get_row (rgn_in,
                           row[0],
-                          x1, MIN (ypos + y1 + BLOCK_SIZE - (CENTER_ROW-1), y1 + height - 1),
+                          x1, MIN (ypos + y1 + blocksize - (CENTER_ROW(blocksize)-1), y1 + height - 1),
                           width);
 
   /* Permute row[i] with row[i-1] and row[0] with row[2r] */
   tmp_row = row[0];
-  for (i = 1; i < BLOCK_SIZE; i++)
+  for (i = 1; i < blocksize; i++)
     row[i - 1] = row[i];
-  row[BLOCK_SIZE-1] = tmp_row;
+  row[blocksize-1] = tmp_row;
 }
 
 /* 
@@ -151,12 +146,14 @@ dct_energy (GimpDrawable *drawable,
   guchar     **row;
   guchar      *outrow;
   gint         width, height;
+  gint 		   blocksize;
 
   if (vals.blocksize != dctAtomDB.blocksize) {
   	atomdb_free(dctAtomDB);
   	init_dctatomdb(&dctAtomDB, vals.blocksize);
 	}
-
+  blocksize = dctAtomDB.blocksize;
+  
   if (! preview)
     gimp_progress_init ("Computing DCT energy function...");
 
@@ -200,14 +197,14 @@ dct_energy (GimpDrawable *drawable,
 
 
   /* Allocate memory for input and output tile rows */
-  init_mem (&row, &outrow, width * channels);
+  init_mem (blocksize,&row, &outrow, width * channels);
 
   
-  for (ii = 0; ii < BLOCK_SIZE; ii++)
+  for (ii = 0; ii < blocksize; ii++)
     {
       gimp_pixel_rgn_get_row (&rgn_in,
                               row[ii],
-                              x1, y1 + CLAMP (ii - (CENTER_ROW-1), 0, height - 1),
+                              x1, y1 + CLAMP (ii - (CENTER_ROW(blocksize)-1), 0, height - 1),
                               width);
     }
   gdouble max_in_picture = 0; //working with positive values only
@@ -263,7 +260,7 @@ dct_energy (GimpDrawable *drawable,
 
   /* We could also put that in a separate function but it's
    * rather simple */
-  for (ii = 0; ii < BLOCK_SIZE; ii++) {
+  for (ii = 0; ii < blocksize; ii++) {
     g_free (row[ii]);
   }
 

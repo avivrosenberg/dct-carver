@@ -113,7 +113,7 @@ gui_dialog (gint32				image_ID,
   
   g_signal_connect (spinbutton_adj, "value_changed",
                     G_CALLBACK (gimp_int_adjustment_update),
-                    &(vals->radius));
+                    &(vals->blocksize));
   gtk_widget_show (dialog);
 
   run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);

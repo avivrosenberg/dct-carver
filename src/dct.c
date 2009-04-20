@@ -13,11 +13,10 @@
 inline gdouble
 dct_atom_at(gint blocksize, gint k1, gint k2, gint j1, gint j2) {
 	
-	gdouble C_INV_SQRT_BLOCKSIZE = (1.0/sqrt(blocksize));
-	gdouble C_SQRT_2_INV_BLOCKSIZE = (sqrt(2.0/blocksize));
-	
-	gdouble a1 = ((k1==0) ? C_INV_SQRT_BLOCKSIZE : C_SQRT_2_INV_BLOCKSIZE);
-	gdouble a2 = ((k2==0) ? C_INV_SQRT_BLOCKSIZE : C_SQRT_2_INV_BLOCKSIZE);
+	gdouble c1 = (1.0/sqrt(blocksize));
+	gdouble c2 = (sqrt(2.0/blocksize));
+	gdouble a1 = ((k1==0) ? c1 : c2);
+	gdouble a2 = ((k2==0) ? c1 : c2);
 	return (a1*a2*cos(M_PI*((gdouble)((2*j1+1)*k1))/((gdouble)(2*blocksize)))*
 				  cos(M_PI*((gdouble)((2*j2+1)*k2))/((gdouble)(2*blocksize))));
 }
@@ -40,11 +39,11 @@ dct_atom(gint blocksize, gint k1, gint k2) {
 void
 init_dctatoms_matrix(gint blocksize, DCTAtomsMatrix* db) {
 	gint k1,k2;
-	*db = g_new(gdouble**, blocksize*blocksize);
+	*db = g_new(gdouble**, NUM_DCT_ATOMS(blocksize));
 	
 	for(k1 = 0; k1 < blocksize; k1++) {
 		for(k2 = 0; k2 < blocksize; k2++) {
-		(*db)[ATOMDB_INDEX(k1,k2)] = dct_atom(blocksize,k1,k2);
+		(*db)[ATOMDB_INDEX(blocksize,k1,k2)] = dct_atom(blocksize,k1,k2);
 		}
 	}
 }
@@ -52,11 +51,11 @@ init_dctatoms_matrix(gint blocksize, DCTAtomsMatrix* db) {
 void atomdb_free_matrix(gint blocksize, DCTAtomsMatrix dctAtomsMatrix) {
 	gint k1,k2,j1;
 	for(k1=0; k1 < blocksize; k1++) {
-		for(k1=0; k1 < blocksize; k1++) {
+		for(k2=0; k2 < blocksize; k2++) {
 			for(j1=0; j1 < blocksize; j1++) {
-				g_free(dctAtomsMatrix[ATOMDB_INDEX(k1,k2)][j1]);
+				g_free(dctAtomsMatrix[ATOMDB_INDEX(blocksize,k1,k2)][j1]);
 			}
-			g_free(dctAtomsMatrix[ATOMDB_INDEX(k1,k2)]);
+			g_free(dctAtomsMatrix[ATOMDB_INDEX(blocksize,k1,k2)]);
 		}
 	}
 	g_free(dctAtomsMatrix);
@@ -81,6 +80,6 @@ DCTAtom
 get_atom (DCTAtomDB dctAtomDB, gint k1, gint k2)
 {
 	DCTAtom retval;
-	retval.matrix = dctAtomDB.db[ATOMDB_INDEX(k1,k2)];
+	retval.matrix = dctAtomDB.db[ATOMDB_INDEX(dctAtomDB.blocksize,k1,k2)];
 	return retval;
 }
