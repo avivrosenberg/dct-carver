@@ -6,14 +6,12 @@
 #define PLUGIN_NAME			"plug-in-dct-carver"
 #define DATA_KEY_VALS    	"plug_in_dct_carver"
 #define DATA_KEY_UI_VALS 	"plug_in_dct_carver_ui"
-//#define PARASITE_KEY     	"plug-in-template-options"
 
 typedef struct 
 {
-  gint      edges;
-  gint      textures;
+  gfloat    edges;
+  gfloat    textures;
   gint      blocksize;
-  gint		radius;
   gboolean	preview;
 } PlugInVals;
 

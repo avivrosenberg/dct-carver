@@ -29,10 +29,9 @@ static void run         (const gchar      *name,
 
 const PlugInVals default_vals =
 {
-  50,	//edges
-  50,	//textures
+  0.5f,	//edges
+  0.5f,	//textures
   8,	//blocksize
-  3,	//radius
   TRUE	//preview
 };
 
@@ -76,10 +75,9 @@ query (void)
     {GIMP_PDB_INT32,	"run-mode",			"Run mode"			},
     {GIMP_PDB_IMAGE,	"image",			"Input image"		},
     {GIMP_PDB_DRAWABLE,	"drawable",			"Input drawable"	},
-    {GIMP_PDB_INT32,	"edges-factor",		"edges-factor"		},
-    {GIMP_PDB_INT32,	"textures-factor",	"textures-factor"	},
-    {GIMP_PDB_INT32,	"block-size",		"block-size"		},
-    {GIMP_PDB_INT32,	"radius",			"radius"			}
+    {GIMP_PDB_FLOAT,	"edges-factor",		"edges-factor"		},
+    {GIMP_PDB_FLOAT,	"textures-factor",	"textures-factor"	},
+    {GIMP_PDB_INT32,	"block-size",		"block-size"		}
   };
 
   gimp_install_procedure (
@@ -148,14 +146,13 @@ run (const gchar      *name,
   switch (run_mode)
     {
     case GIMP_RUN_NONINTERACTIVE:
-      if (nparams != 7)
+      if (nparams != 6)
         status = GIMP_PDB_CALLING_ERROR;
       else 
       {
 	      vals.edges		= param[3].data.d_int32;
 	      vals.textures		= param[4].data.d_int32;
 	      vals.blocksize	= param[5].data.d_int32;
-	      vals.radius		= param[6].data.d_int32;
 	   }
       break;
     	

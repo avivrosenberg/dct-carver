@@ -56,41 +56,39 @@ process_row (guchar **row,
         gdouble min_in_pixel;
         gint k1,k2;
         gint max_index = 0;
+        gdouble factor = 1.0f;
 		for (k1 = 0; k1 < blocksize; k1++)
 		  {
 		  for (k2 = 0; k2 < blocksize; k2++)
 		    {
 		 	  if((!k1)&&(!k2)) continue;
-		 	  gdouble sum = 0;
+		 	  gdouble sum = 0,fsum;
 		 	  DCTAtom atom = get_atom(dctAtomDB,k1,k2);
               for (ii = 0; ii < blocksize; ii++) {
                 for (jj = left; jj <= right; jj++)
                   {
                   	gint x = ii; gint y = jj-left;
-                  	/*if (atom.transpose){
-                  		x = jj - left;
-                  		y = ii;
-                  	 	}
-                  	 */
                     sum += ((gdouble)row[ii][channels * CLAMP (jj, 0, width - 1) + k])*atom.matrix[x][y]; 
 		          }
 			  }
-		      if (ABS(sum)>max_in_pixel) { 
+		      if(ABS(sum) > max_in_pixel) { 
 		      	max_in_pixel = ABS(sum);
 		      	max_index = (k1*blocksize+k2);
-		      	}
-		      if ((k1==0)&&(k2==0)) { min_in_pixel = ABS(sum); }
-		      else if(ABS(sum)<min_in_pixel) { min_in_pixel = ABS(sum); }
+		 	    factor = (IS_EDGE_ATOM(blocksize,k1,k2) ? ((gdouble)vals.edges) : ((gdouble)vals.textures));
+		      }
+		   //   if ((k1==0)&&(k2==0)) { min_in_pixel = ABS(sum); }
+		   //   else if(ABS(sum) < min_in_pixel) { min_in_pixel = ABS(sum); }
 		    }
 	      }
+	      max_in_pixel *= factor;
           max_in_pixel_buf[line_number*width*channels + j*channels + k] = max_in_pixel;
           //max_in_pixel_buf[line_number*width*channels + j*channels + k] = 4*max_index;
           if (max_in_pixel > (*max_in_picture)) { (*max_in_picture) = max_in_pixel; }
-          if (is_first_row) {
-          	 (*min_in_picture) = min_in_pixel;
+          if (*is_first_row) {
+          	 (*min_in_picture) = max_in_pixel;
           	 (*is_first_row) = FALSE;
 		  }
-          else if (min_in_pixel < (*min_in_picture)) { (*min_in_picture) = min_in_pixel; }
+          else if (max_in_pixel < (*min_in_picture)) { (*min_in_picture) = max_in_pixel; }
         }
     }
 }
