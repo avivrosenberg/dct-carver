@@ -127,8 +127,6 @@ run (const gchar      *name,
   	gimp_image_convert_grayscale(image_ID);
   }
   
-  init_dctatomdb(&dctAtomDB);
-  
   /*  Get the specified drawable  */
   drawable_orig = gimp_drawable_get(param[2].data.d_drawable);
   drawableID = gimp_layer_new_from_drawable(param[2].data.d_drawable, image_ID);
@@ -142,6 +140,8 @@ run (const gchar      *name,
   image_vals    = default_image_vals;
   drawable_vals = default_drawable_vals;
   ui_vals       = default_ui_vals;
+
+  init_dctatomdb(&dctAtomDB);
 
   switch (run_mode)
     {
