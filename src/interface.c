@@ -38,7 +38,7 @@ gui_dialog (gint32				image_ID,
   GtkWidget *main_hbox;
   GtkWidget *preview;
   GtkWidget *frame;
-  GtkWidget *radius_label;
+  GtkWidget *blocksize_label;
   GtkWidget *alignment;
   GtkWidget *spinbutton;
   GtkObject *spinbutton_adj;
@@ -85,17 +85,17 @@ gui_dialog (gint32				image_ID,
   gtk_widget_show (main_hbox);
   gtk_container_add (GTK_CONTAINER (alignment), main_hbox);
 
-  radius_label = gtk_label_new_with_mnemonic ("_Radius:");
-  gtk_widget_show (radius_label);
-  gtk_box_pack_start (GTK_BOX (main_hbox), radius_label, FALSE, FALSE, 6);
-  gtk_label_set_justify (GTK_LABEL (radius_label), GTK_JUSTIFY_RIGHT);
+  blocksize_label = gtk_label_new_with_mnemonic ("_Block Size:");
+  gtk_widget_show (blocksize_label);
+  gtk_box_pack_start (GTK_BOX (main_hbox), blocksize_label, FALSE, FALSE, 6);
+  gtk_label_set_justify (GTK_LABEL (blocksize_label), GTK_JUSTIFY_RIGHT);
 
-  spinbutton = gimp_spin_button_new (&spinbutton_adj, vals->radius, 
+  spinbutton = gimp_spin_button_new (&spinbutton_adj, vals->blocksize, 
                                      1, 32, 1, 1, 1, 5, 0);
   gtk_box_pack_start (GTK_BOX (main_hbox), spinbutton, FALSE, FALSE, 0);
   gtk_widget_show (spinbutton);
 
-  frame_label = gtk_label_new ("<b>Modify radius</b>");
+  frame_label = gtk_label_new ("<b>Modify block size</b>");
   gtk_widget_show (frame_label);
   gtk_frame_set_label_widget (GTK_FRAME (frame), frame_label);
   gtk_label_set_use_markup (GTK_LABEL (frame_label), TRUE);

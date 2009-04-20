@@ -25,14 +25,21 @@ typedef struct {
 	//gboolean transpose;
 } DCTAtom;
 
-typedef gdouble*** DCTAtomDB;
+typedef gdouble*** DCTAtomsMatrix;
+
+typedef struct {
+	DCTAtomsMatrix 	db;
+	gint			blocksize;
+} DCTAtomDB;
+
+
 
 /*  Public functions  */
 
 /* Initialize the Global database with the atoms */
-void init_dctatomdb(DCTAtomDB* db);
+void init_dctatomdb(DCTAtomDB* _db, gint _blocksize);
 
-void atomdb_free(DCTAtomDB dctAtomDB) ;
+void atomdb_free(DCTAtomDB _db) ;
 
 DCTAtom get_atom (DCTAtomDB dctAtomDB, gint k1, gint k2);
 

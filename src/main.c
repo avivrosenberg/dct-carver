@@ -141,7 +141,7 @@ run (const gchar      *name,
   drawable_vals = default_drawable_vals;
   ui_vals       = default_ui_vals;
 
-  init_dctatomdb(&dctAtomDB);
+  init_dctatomdb(&dctAtomDB, vals.blocksize);
 
   switch (run_mode)
     {

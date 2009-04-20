@@ -152,6 +152,11 @@ dct_energy (GimpDrawable *drawable,
   guchar      *outrow;
   gint         width, height;
 
+  if (vals.blocksize != dctAtomDB.blocksize) {
+  	atomdb_free(dctAtomDB);
+  	init_dctatomdb(&dctAtomDB, vals.blocksize);
+	}
+
   if (! preview)
     gimp_progress_init ("Computing DCT energy function...");
 
