@@ -8,7 +8,10 @@ install:
 	cc $(COMP_FLAGS) $(SOURCES) -o $(OUTPUT_DIR)/$(NAME) $(LINK_FLAGS)
 
 clean:
-	rm -rf *~ ./src/*~
+	rm -rf *~ ./src/*~ ./src/*.orig
+
+codestyle:
+	astyle -TaSfUp src/*
 
 uninstall:
 	rm $(OUTPUT_DIR)/$(NAME)

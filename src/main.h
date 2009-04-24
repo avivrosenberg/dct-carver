@@ -7,27 +7,23 @@
 #define DATA_KEY_VALS    	"plug_in_dct_carver"
 #define DATA_KEY_UI_VALS 	"plug_in_dct_carver_ui"
 
-typedef struct 
-{
-  gfloat    edges;
-  gfloat    textures;
-  gint      blocksize;
-  gboolean	preview;
+typedef struct {
+	gfloat    edges;
+	gfloat    textures;
+	gint      blocksize;
+	gboolean	preview;
 } PlugInVals;
 
-typedef struct 
-{
-  gint32    image_id;
+typedef struct {
+	gint32    image_id;
 } PlugInImageVals;
 
-typedef struct
-{
-  gint32    drawable_id;
+typedef struct {
+	gint32    drawable_id;
 } PlugInDrawableVals;
 
-typedef struct 
-{
-  gboolean  chain_active;
+typedef struct {
+	gboolean  chain_active;
 } PlugInUIVals;
 
 

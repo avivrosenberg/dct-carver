@@ -36,6 +36,6 @@ void init_dctatomdb(DCTAtomDB* _db, gint _blocksize);
 
 void atomdb_free(DCTAtomDB _db) ;
 
-DCTAtom get_atom (DCTAtomDB dctAtomDB, gint k1, gint k2);
+DCTAtom get_atom(DCTAtomDB dctAtomDB, gint k1, gint k2);
 
 #endif /* __DCT_H__ */
