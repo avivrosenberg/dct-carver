@@ -11,10 +11,9 @@ typedef struct EnergyParameters_ EnergyParameters;
 
 /*  Public functions  */
 
-void   render(gint32				image_ID,
-			  GimpDrawable		*drawable,
-			  PlugInVals			*vals,
-			  PlugInImageVals		*image_vals,
+void   render(		  gint32		layer_ID,
+			  PlugInVals		*vals,
+			  PlugInImageVals	*image_vals,
 			  PlugInDrawableVals	*drawable_vals);
 
 void dct_energy(GimpDrawable     *drawable,

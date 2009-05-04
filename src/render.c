@@ -130,9 +130,31 @@ shuffle(GimpPixelRgn *rgn_in,
 
 /*
  * */
+
+LqrProgress* progress_init () {
+  LqrProgress * progress = lqr_progress_new ();
+  lqr_progress_set_init (progress, (LqrProgressFuncInit) gimp_progress_init);
+  lqr_progress_set_update (progress, (LqrProgressFuncUpdate) gimp_progress_update);
+  lqr_progress_set_end (progress, (LqrProgressFuncEnd) gimp_progress_end);
+  lqr_progress_set_init_width_message (progress, ("Resizing width..."));
+  lqr_progress_set_init_height_message (progress, ("Resizing height..."));
+  return progress;
+}
+
+
+gint clamp_offset_to_border(gint base, gint offset, gint lower_border, gint upper_border) {
+	if (((base + offset) - lower_border) < 0) {
+		return (offset - ((base + offset)-lower_border));
+	}
+	if (((base + offset) - upper_border) > 0) {
+		return (offset - ((base + offset)-upper_border));
+	}
+	return offset;
+}
+
 gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReaderWindow *rw) {
 
-  gint i, j;
+  gint i, ii, j, jj;
   gint blocksize = lqr_rwindow_get_radius (rw); //radius of the window is equal to dct atom blocksize
   gdouble sum = 0;
   DCTAtom atom = get_atom(dctAtomDB, k1, k2);
@@ -143,7 +165,9 @@ gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReaderWind
        * at pixel (x + i, y + j)
        * The last argument (i.e. the channel) is 0 because
        * we're using LQR_ER_BRIGHT (which only returns one channel) */
-      sum += f * lqr_rwindow_read(rw, i, j, 0);
+      ii = clamp_offset_to_border(x,i,0,h-1);
+      jj = clamp_offset_to_border(y,j,0,w-1);
+      sum += atom.matrix[i+blocksize-1][j+blocksize-1] * lqr_rwindow_read(rw, ii, jj, 0);
     }
   }
   return ABS(sum);
@@ -151,48 +175,89 @@ gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReaderWind
 
 gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReaderWindow *rw, gpointer extra_data)
 {
-  /* read parameters */
-  EnergyParameters * params = (EnergyParameters *) extra_data;
+	/* read parameters */
+	EnergyParameters * params = (EnergyParameters *) extra_data;
+	gint k1, k2;
+	gint blocksize = params->blocksize;
+	gfloat edges = params->edges;
+	gfloat textures = params->textures;
+	gdouble factor = 1.0;
+	gdouble max_sum = 0;
+	gdouble curr_sum;
 
-  gint blocksize = params->blocksize;
-  gfloat edges = params->edges;
-  gfloat textures = params->textures;
-  gdouble factor = 1.0;
-  gdouble max_sum = 0;
-  gdouble curr_sum;
-
-for (k1 = 0; k1 < blocksize; k1++) {
-	for (k2 = 0; k2 < blocksize; k2++) {
-		if ((!k1) && (!k2)) continue;
-		curr_sum = convolve(k1,k2,rw);
-		if(curr_sum > max_sum) {
-			max_sum = curr_sum;
-			factor = (IS_EDGE_ATOM(blocksize, k1, k2) ? (edges) : (textures));
+	for (k1 = 0; k1 < blocksize; k1++) {
+		for (k2 = 0; k2 < blocksize; k2++) {
+			if ((!k1) && (!k2)) continue;
+			curr_sum = convolve(k1,k2,x,y,w,h,rw);
+			if(curr_sum > max_sum) {
+				max_sum = curr_sum;
+				factor = (IS_EDGE_ATOM(blocksize, k1, k2) ? (edges) : (textures));
+			}
 		}
 	}
+	return ((gfloat) max_sum*factor);
 }
-  return ((gfloat) max_sum*factor);
+
+guchar* rgb_buffer_from_layer(gint layer_ID) {
+	guchar* rgb_buffer;
+	gint w = gimp_drawable_width(layer_ID);
+  	gint h = gimp_drawable_height(layer_ID);
+  	gint bpp = gimp_drawable_bpp(layer_ID);
+  	TRY_N_N(rgb_buffer = g_try_new(guchar, bpp * w * h));
+  	GimpDrawable* drawable = gimp_drawable_get(layer_ID);
+	GimpPixelRgn rgn_in;
+
+  	gimp_pixel_rgn_init(&rgn_in, drawable, 0, 0, w, h, FALSE, FALSE);
+	gimp_pixel_rgn_get_rect(&rgn_in, rgb_buffer, 0, 0, w, h);
+
+	return rgb_buffer;
+
 }
 
 /*  Public functions  */
 
 void
-render(gint32              image_ID,
-	   GimpDrawable       *drawable,
+render(gint32                 image_ID,
 	   PlugInVals         *vals,
 	   PlugInImageVals    *image_vals,
 	   PlugInDrawableVals *drawable_vals) {
 	
-	//dct_energy(drawable, NULL);
 	EnergyParameters params;
+	LqrCarver *carver;
+	LqrProgress* progress = progress_init();
+	gint y, bpp;
+  	gint old_width, old_height;
+  	gint new_width, new_height;
+	gint seams_number = vals->seams_number;
+  	GimpDrawable *drawable;
+  	GimpPixelRgn rgn_in;
+	gint layer_ID = gimp_image_get_active_layer(image_ID);
+	guchar* rgb_buffer = rgb_buffer_from_layer(layer_ID);
+	gint delta_x = 1;
+	gint rigidity = 0;
 
 	params.edges = vals->edges;
 	params.textures = vals->textures;
 	params.blocksize = vals->blocksize;
 
-	LqrCarver *carver;
-	TRAP_N (carver = lqr_carver_new (rgb_buffer, old_width, old_height, 3));
+	old_width = gimp_drawable_width (layer_ID);
+	old_height = gimp_drawable_height (layer_ID);
+	bpp = gimp_drawable_bpp (layer_ID);
+	seams_number = vals->seams_number;
+	
+	if (1) { //check resize direction
+		new_width = old_width-seams_number;
+		new_height = old_height;
+	} else {
+		new_width = old_width;
+		new_height = old_height-seams_number;
+	}
+
+	carver = lqr_carver_new (rgb_buffer, old_width, old_height, bpp);
 	lqr_carver_set_energy_function (carver, dct_pixel_energy, vals->blocksize, LQR_ER_BRIGHT, (void*) &params);  
+	lqr_carver_init(carver, delta_x, rigidity);
+	lqr_carver_set_progress (carver, progress);
+	lqr_carver_resize (carver, new_width, new_height);
 }
 
 void

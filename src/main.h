@@ -11,6 +11,7 @@ typedef struct {
 	gfloat    edges;
 	gfloat    textures;
 	gint      blocksize;
+	gint	  seams_number;
 	gboolean	preview;
 } PlugInVals;
 

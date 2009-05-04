@@ -31,6 +31,7 @@ const PlugInVals default_vals = {
 	0.5f,	//edges
 	0.5f,	//textures
 	8,	//blocksize
+	20,	//seams_number
 	FALSE	//preview
 };
 
@@ -70,6 +71,7 @@ query(void) {
 		{GIMP_PDB_DRAWABLE,	"drawable",			"Input drawable"	},
 		{GIMP_PDB_FLOAT,	"edges-factor",		"edges-factor"		},
 		{GIMP_PDB_FLOAT,	"textures-factor",	"textures-factor"	},
+		{GIMP_PDB_INT32,	"seams-number",		"seams-number"		},
 		{GIMP_PDB_INT32,	"block-size",		"block-size"		}
 	};
 
@@ -96,10 +98,11 @@ run(const gchar      *name,
 	const GimpParam  *param,
 	gint             *nreturn_vals,
 	GimpParam       **return_vals) {
+
 	static GimpParam  values[1];
 	GimpPDBStatusType status = GIMP_PDB_SUCCESS;
 	GimpRunMode       run_mode;
-	GimpDrawable     *drawable_orig;
+	//GimpDrawable     *drawable_orig;
 	GimpDrawable     *drawable;
 	gint32 			image_ID;
 	gint32			drawableID;
@@ -114,23 +117,18 @@ run(const gchar      *name,
 
 	image_ID = param[1].data.d_image;
 
-	if (gimp_drawable_is_rgb(param[2].data.d_drawable)) {
-		gimp_image_convert_grayscale(image_ID);
-	}
+	//if (gimp_drawable_is_rgb(param[2].data.d_drawable)) {
+	//	gimp_image_convert_grayscale(image_ID);
+	//}
 
 	/*  Get the specified drawable  */
-	drawable_orig = gimp_drawable_get(param[2].data.d_drawable);
-
-	drawableID = gimp_layer_new_from_drawable(param[2].data.d_drawable, image_ID);
-
-	gimp_image_add_layer(image_ID, drawableID, -1);
-
-	gimp_layer_flatten(param[2].data.d_drawable);
-
-	gimp_layer_flatten(drawableID);
-
-	drawable = gimp_drawable_get(drawableID);
-
+	//drawable_orig = gimp_drawable_get(param[2].data.d_drawable);
+	//drawableID = gimp_layer_new_from_drawable(param[2].data.d_drawable, image_ID);
+	//gimp_image_add_layer(image_ID, drawableID, -1);
+	//gimp_layer_flatten(param[2].data.d_drawable);
+	//gimp_layer_flatten(drawableID);
+	//drawable = gimp_drawable_get(drawableID);
+	drawable = gimp_drawable_get(param[2].data.d_drawable);
 	/*  Initialize with default values  */
 	vals          = default_vals;
 
@@ -141,21 +139,18 @@ run(const gchar      *name,
 	ui_vals       = default_ui_vals;
 
 	init_dctatomdb(&dctAtomDB, vals.blocksize);
-
-	atomdb_free(dctAtomDB);
-
-	init_dctatomdb(&dctAtomDB, vals.blocksize);
-
+	
 	switch (run_mode) {
 
 		case GIMP_RUN_NONINTERACTIVE:
 
-			if (nparams != 6)
+			if (nparams != 7)
 				status = GIMP_PDB_CALLING_ERROR;
 			else {
 				vals.edges		= param[3].data.d_int32;
 				vals.textures		= param[4].data.d_int32;
-				vals.blocksize	= param[5].data.d_int32;
+				vals.seams_number	= param[5].data.d_int32;
+				vals.blocksize	= param[6].data.d_int32;
 			}
 
 			break;
@@ -184,8 +179,7 @@ run(const gchar      *name,
 	}
 
 	if (status == GIMP_PDB_SUCCESS) {
-		render(image_ID, drawable, &vals, &image_vals, &drawable_vals);
-		//render should call convolve(drawable, NULL);
+		render(image_ID, &vals, &image_vals, &drawable_vals);
 
 		if (run_mode != GIMP_RUN_NONINTERACTIVE)
 			gimp_displays_flush();
@@ -197,7 +191,7 @@ run(const gchar      *name,
 
 		gimp_drawable_detach(drawable);
 
-		gimp_drawable_detach(drawable_orig);
+		//gimp_drawable_detach(drawable_orig);
 	}
 
 	/*  Finally, set options in the core  */
