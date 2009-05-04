@@ -16,15 +16,15 @@
 /* 	Defintions */
 
 typedef struct {
-	gdouble** matrix;
-	//gboolean transpose;
+    gdouble** matrix;
+    //gboolean transpose;
 } DCTAtom;
 
 typedef gdouble*** DCTAtomsMatrix;
 
 typedef struct {
-	DCTAtomsMatrix 	db;
-	gint			blocksize;
+    DCTAtomsMatrix 	db;
+    gint			blocksize;
 } DCTAtomDB;
 
 

@@ -11,7 +11,7 @@ clean:
 	rm -rf *~ ./src/*~ ./src/*.orig
 
 codestyle:
-	astyle -TaSfUp src/*
+	astyle -s4aSfUp src/*
 
 uninstall:
 	rm $(OUTPUT_DIR)/$(NAME)
