@@ -1,8 +1,8 @@
-
 #include <gtk/gtk.h>
 
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
+#include <lqr.h>
 
 #include "dct.h"
 #include "main.h"
@@ -130,6 +130,49 @@ shuffle(GimpPixelRgn *rgn_in,
 
 /*
  * */
+gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReaderWindow *rw) {
+
+  gint i, j;
+  gint blocksize = lqr_rwindow_get_radius (rw); //radius of the window is equal to dct atom blocksize
+  gdouble sum = 0;
+  DCTAtom atom = get_atom(dctAtomDB, k1, k2);
+
+  for (i = -blocksize+1; i <= blocksize; i++) {
+    for (j = -blocksize+1; j <= blocksize; j++) {
+      /* lqr_rwindow_read (rw, i, j, 0) reads the image brightness
+       * at pixel (x + i, y + j)
+       * The last argument (i.e. the channel) is 0 because
+       * we're using LQR_ER_BRIGHT (which only returns one channel) */
+      sum += f * lqr_rwindow_read(rw, i, j, 0);
+    }
+  }
+  return ABS(sum);
+}
+
+gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReaderWindow *rw, gpointer extra_data)
+{
+  /* read parameters */
+  EnergyParameters * params = (EnergyParameters *) extra_data;
+
+  gint blocksize = params->blocksize;
+  gfloat edges = params->edges;
+  gfloat textures = params->textures;
+  gdouble factor = 1.0;
+  gdouble max_sum = 0;
+  gdouble curr_sum;
+
+for (k1 = 0; k1 < blocksize; k1++) {
+	for (k2 = 0; k2 < blocksize; k2++) {
+		if ((!k1) && (!k2)) continue;
+		curr_sum = convolve(k1,k2,rw);
+		if(curr_sum > max_sum) {
+			max_sum = curr_sum;
+			factor = (IS_EDGE_ATOM(blocksize, k1, k2) ? (edges) : (textures));
+		}
+	}
+}
+  return ((gfloat) max_sum*factor);
+}
 
 /*  Public functions  */
 
@@ -139,7 +182,17 @@ render(gint32              image_ID,
 	   PlugInVals         *vals,
 	   PlugInImageVals    *image_vals,
 	   PlugInDrawableVals *drawable_vals) {
-	dct_energy(drawable, NULL);
+	
+	//dct_energy(drawable, NULL);
+	EnergyParameters params;
+
+	params.edges = vals->edges;
+	params.textures = vals->textures;
+	params.blocksize = vals->blocksize;
+
+	LqrCarver *carver;
+	TRAP_N (carver = lqr_carver_new (rgb_buffer, old_width, old_height, 3));
+	lqr_carver_set_energy_function (carver, dct_pixel_energy, vals->blocksize, LQR_ER_BRIGHT, (void*) &params);  
 }
 
 void

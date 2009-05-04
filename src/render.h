@@ -1,7 +1,13 @@
-
 #ifndef __RENDER_H__
 #define __RENDER_H__
 
+struct EnergyParameters_ {
+	gfloat  edges;
+	gfloat  textures;
+	gint	blocksize;
+} extra_pars;
+
+typedef struct EnergyParameters_ EnergyParameters;
 
 /*  Public functions  */
 

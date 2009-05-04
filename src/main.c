@@ -31,7 +31,7 @@ const PlugInVals default_vals = {
 	0.5f,	//edges
 	0.5f,	//textures
 	8,	//blocksize
-	TRUE	//preview
+	FALSE	//preview
 };
 
 const PlugInImageVals default_image_vals = {
@@ -185,7 +185,7 @@ run(const gchar      *name,
 
 	if (status == GIMP_PDB_SUCCESS) {
 		render(image_ID, drawable, &vals, &image_vals, &drawable_vals);
-		//render shuld call convolve(drawable, NULL);
+		//render should call convolve(drawable, NULL);
 
 		if (run_mode != GIMP_RUN_NONINTERACTIVE)
 			gimp_displays_flush();
