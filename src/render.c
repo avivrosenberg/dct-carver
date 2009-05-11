@@ -266,6 +266,7 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     EnergyParameters params;
     LqrCarver *carver;
     LqrProgress* progress = progress_init();
+    LqrResizeOrder res_order = LQR_RES_ORDER_HOR;
     gint y, bpp;
     gint old_width, old_height;
     gint new_width, new_height;
@@ -284,14 +285,18 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     old_width = gimp_drawable_width(layer_ID);
     old_height = gimp_drawable_height(layer_ID);
     bpp = gimp_drawable_bpp(layer_ID);
-    seams_number = vals->seams_number;
+    //seams_number = vals->seams_number;
 
-    if (1) { //check resize direction
-        new_width = old_width - seams_number;
-        new_height = old_height;
+	if (vals->direction == horizontally) printf("\n horizontally1 \n");
+	if (vals->direction == vertically) printf("\n vertically1 \n");
+	
+    if (vals->direction == vertically) { //check resize direction
+    	new_width = old_width;
+        new_height = old_height + seams_number;
+        res_order = LQR_RES_ORDER_VERT; 
     } else {
-        new_width = old_width;
-        new_height = old_height - seams_number;
+        new_width = old_width + seams_number;
+        new_height = old_height;
     }
 
     carver = lqr_carver_new(rgb_buffer, old_width, old_height, bpp);
@@ -299,7 +304,13 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_BRIGHT, (void*) &params);
     lqr_carver_init(carver, delta_x, rigidity);
     lqr_carver_set_progress(carver, progress);
+    lqr_carver_set_resize_order (carver, res_order);
+    if (vals->direction == horizontally) printf("\n horizontally2 \n");
+	if (vals->direction == vertically) printf("\n vertically2 \n");
     lqr_carver_resize(carver, new_width, new_height);
+	if (vals->direction == horizontally) printf("\n horizontally3 \n");
+	if (vals->direction == vertically) printf("\n vertically3 \n");
+
 
     gimp_layer_resize(layer_ID, new_width, new_height, 0, 0);
 

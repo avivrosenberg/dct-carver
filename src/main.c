@@ -32,7 +32,10 @@ const PlugInVals default_vals = {
     0.5f,	//textures
     8,	//blocksize
     20,	//seams_number
-    FALSE	//preview
+    FALSE,	//preview
+    FALSE,	//new_layer
+    FALSE,	//resize_canvas
+    vertically	//direction
 };
 
 const PlugInImageVals default_image_vals = {
