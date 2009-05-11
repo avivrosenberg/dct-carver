@@ -24,12 +24,9 @@ static PlugInUIVals *ui_state = NULL;
 /*  Public functions  */
 
 gboolean
-gui_dialog(gint32				image_ID,
-           GimpDrawable		*drawable,
-           PlugInVals			*vals,
-           PlugInImageVals		*image_vals,
-           PlugInDrawableVals	*drawable_vals,
-           PlugInUIVals		*ui_vals) {
+gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImageVals *image_vals, 
+           PlugInDrawableVals *drawable_vals, PlugInUIVals *ui_vals) {
+
     GtkWidget *dialog;
     GtkWidget *main_vbox;
     GtkWidget *main_hbox;
@@ -133,7 +130,7 @@ gui_dialog(gint32				image_ID,
     /* Signals:
      * */
     g_signal_connect_swapped(preview, "invalidated",
-                             G_CALLBACK(dct_energy),
+                             G_CALLBACK(dct_energy_preview),
                              drawable);
 
     g_signal_connect_swapped(spinbutton_adj, "value_changed",
@@ -147,8 +144,6 @@ gui_dialog(gint32				image_ID,
     g_signal_connect_swapped(textures_adj, "value_changed",
                              G_CALLBACK(gimp_preview_invalidate),
                              preview);
-
-    //dct_energy (drawable, GIMP_PREVIEW (preview));
 
     g_signal_connect(spinbutton_adj, "value_changed",
                      G_CALLBACK(gimp_int_adjustment_update),
@@ -170,3 +165,9 @@ gui_dialog(gint32				image_ID,
 
     return run;
 }
+
+void
+error(const gchar* message) {
+	gimp_message(message);
+}
+
