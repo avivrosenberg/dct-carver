@@ -265,12 +265,10 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     bpp = gimp_drawable_bpp(layer_ID);
     //seams_number = vals->seams_number;
 
-	if (vals->direction == horizontally) printf("\n horizontally1 \n");
-	if (vals->direction == vertically) printf("\n vertically1 \n");
-	if (vals->new_layer == TRUE) printf("\n new_layer is on \n");
-	if (vals->resize_canvas == TRUE) printf("\n resize_canvas \n");
+	if (vals->horizontally == TRUE) printf("\n horizontally1 \n");
+	if (vals->vertically == TRUE) printf("\n vertically1 \n");
 	
-    if (0) { //check resize direction
+    if (vals->vertically) { //check resize direction
     	new_width = old_width;
         new_height = old_height + seams_number;
         res_order = LQR_RES_ORDER_VERT; 
@@ -285,11 +283,11 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     lqr_carver_init(carver, delta_x, rigidity);
     lqr_carver_set_progress(carver, progress);
     lqr_carver_set_resize_order (carver, res_order);
-    if (vals->direction == horizontally) printf("\n horizontally2 \n");
-	if (vals->direction == vertically) printf("\n vertically2 \n");
+    if (vals->horizontally == TRUE) printf("\n horizontally2 \n");
+	if (vals->vertically == TRUE) printf("\n vertically2 \n");
     lqr_carver_resize(carver, new_width, new_height);
-	if (vals->direction == horizontally) printf("\n horizontally3 \n");
-	if (vals->direction == vertically) printf("\n vertically3 \n");
+	if (vals->horizontally == TRUE) printf("\n horizontally3 \n");
+	if (vals->vertically == TRUE) printf("\n vertically3 \n");
 
 
     gimp_layer_resize(layer_ID, new_width, new_height, 0, 0);

@@ -68,6 +68,15 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *resize_canvas_button;
     GtkWidget *options_frame_label;
     
+    
+    GtkWidget *vert;
+    GtkWidget *horizon;
+    GtkWidget *radio_frame;
+    GtkWidget *radio_frame_label;
+    GtkWidget *radio_vbox;
+    GtkWidget *radio_entry;
+    
+    
 
     gimp_ui_init("dct-carver", FALSE);
 
@@ -193,19 +202,47 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 	
 	//direction - start
 	
-	direction_alignment = gtk_alignment_new(0.4, 0.5, 1, 1);
-    gtk_widget_show(direction_alignment);
-    gtk_box_pack_start(GTK_BOX(resize_vbox), direction_alignment, TRUE, TRUE, 0);
-    gtk_alignment_set_padding(GTK_ALIGNMENT(direction_alignment), 6, 6, 6, 6);
+	//direction_alignment = gtk_alignment_new(0.4, 0.5, 1, 1);
+    //gtk_widget_show(direction_alignment);
+    //gtk_box_pack_start(GTK_BOX(resize_vbox), direction_alignment, TRUE, TRUE, 0);
+    //gtk_alignment_set_padding(GTK_ALIGNMENT(direction_alignment), 6, 6, 6, 6);
+	//
+	//direction_radio_button_vbox = gimp_int_radio_group_new(TRUE, "Carving Direction",
+    //                                G_CALLBACK (gimp_radio_button_update),
+	//			    				&(vals->direction), vals->direction,
+	//			    				"Vertically", 	NULL, NULL,
+	//			    				"Horizontally", NULL, NULL,
+	//			    				NULL);
+	//gtk_widget_show(direction_radio_button_vbox);
+	//gtk_container_add(GTK_CONTAINER(direction_alignment), direction_radio_button_vbox);
 	
-	direction_radio_button_vbox = gimp_int_radio_group_new (TRUE, "Carving Direction",
-                                    G_CALLBACK (gimp_radio_button_update),
-				    				&(vals->direction), vals->direction,
-				    				"Vertically", 	TRUE,  NULL,
-				    				"Horizontally", TRUE, NULL,
-				    				NULL);
-	gtk_widget_show(direction_radio_button_vbox);
-	gtk_container_add(GTK_CONTAINER(direction_alignment), direction_radio_button_vbox);
+	radio_frame = gtk_frame_new(NULL);
+    gtk_widget_show(radio_frame);
+    gtk_box_pack_start(GTK_BOX(resize_vbox), radio_frame, TRUE, TRUE, 0);
+    gtk_container_set_border_width(GTK_CONTAINER(radio_frame), 6);
+	
+	radio_vbox = gtk_vbox_new(TRUE, 0);
+	gtk_widget_show(radio_vbox);
+	
+	vert = gtk_radio_button_new_with_label(NULL, "Vertically");
+	gtk_widget_show(vert);
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(vert), vals->vertically);
+
+	horizon = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(vert), "Horizontally");
+	gtk_widget_show(horizon);
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(horizon), vals->horizontally);
+	
+	gtk_box_pack_start(GTK_BOX(radio_vbox), vert, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(radio_vbox), horizon, TRUE, TRUE, 0);
+	
+	gtk_container_add(GTK_CONTAINER(radio_frame), radio_vbox);
+	gtk_box_pack_start(GTK_BOX(resize_vbox), radio_frame, TRUE, TRUE, 2);
+	
+	radio_frame_label = gtk_label_new("<b>Carving direction</b>");
+    gtk_widget_show(radio_frame_label);
+    gtk_frame_set_label_widget(GTK_FRAME(radio_frame), radio_frame_label);
+    gtk_label_set_use_markup(GTK_LABEL(radio_frame_label), TRUE);
+	
 	
 	//direction - end
 
@@ -293,6 +330,12 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     g_signal_connect(seams_number_spinbutton_adj, "value_changed",
                      G_CALLBACK(gimp_int_adjustment_update),
                      &(vals->seams_number));
+                     
+    g_signal_connect (vert, "toggled",
+                     G_CALLBACK (toggle), &(vals->vertically));
+                     
+	g_signal_connect (horizon, "toggled",
+                     G_CALLBACK (toggle), &(vals->horizontally)); 
                      
     g_signal_connect (new_layer_button, "toggled",
                      G_CALLBACK (toggle), &(vals->new_layer));

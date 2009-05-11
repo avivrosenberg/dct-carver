@@ -20,6 +20,8 @@ typedef struct {
     gboolean	preview;
     gboolean	new_layer;
     gboolean	resize_canvas;
+    gboolean	vertically;
+    gboolean	horizontally;
     direction_type	direction;
 } PlugInVals;
 
