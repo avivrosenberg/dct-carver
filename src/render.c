@@ -167,7 +167,7 @@ gint clamp_offset_to_border(gint base, gint offset, gint lower_border, gint uppe
     return offset;
 }
 
-gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReaderWindow *rw) {
+gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReadingWindow *rw) {
 
     gint i, ii, j, jj;
     gint radius = lqr_rwindow_get_radius(rw);  //radius of the window is equal to dct atom blocksize
@@ -189,7 +189,7 @@ gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReaderWind
     return ABS(sum);
 }
 
-gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReaderWindow *rw, gpointer extra_data) {
+gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gpointer extra_data) {
     /* read parameters */
     EnergyParameters * params = (EnergyParameters *) extra_data;
     gint k1, k2;
@@ -221,7 +221,7 @@ guchar* rgb_buffer_from_layer(gint layer_ID) {
     gint w = gimp_drawable_width(layer_ID);
     gint h = gimp_drawable_height(layer_ID);
     gint bpp = gimp_drawable_bpp(layer_ID);
-    TRY_N_N(rgb_buffer = g_try_new(guchar, bpp * w * h));
+    rgb_buffer = g_try_new(guchar, bpp * w * h);
     GimpDrawable* drawable = gimp_drawable_get(layer_ID);
     GimpPixelRgn rgn_in;
 
@@ -247,9 +247,11 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     GimpDrawable *drawable;
     GimpPixelRgn rgn_in;
     gint layer_ID = gimp_image_get_active_layer(image_ID);
-    guchar* rgb_buffer = rgb_buffer_from_layer(layer_ID);
+    guchar* rgb_buffer;
     gint delta_x = 1;
     gint rigidity = 0;
+    gint x_off,y_off;
+    gchar new_layer_name[LQR_MAX_NAME_LENGTH];
 
     params.edges = vals->edges;
     params.textures = vals->textures;
@@ -260,14 +262,23 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
         init_dctatomdb(&dctAtomDB, vals->blocksize);
     }
 
+    if (vals->new_layer) {
+      g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "%s (copy)", gimp_drawable_get_name(layer_ID));
+      layer_ID = gimp_layer_copy(layer_ID);
+      gimp_image_add_layer(image_ID, layer_ID, -1);
+      gimp_drawable_set_name(layer_ID, new_layer_name);
+      gimp_drawable_set_visible(layer_ID, FALSE);
+    }
+
     old_width = gimp_drawable_width(layer_ID);
     old_height = gimp_drawable_height(layer_ID);
     bpp = gimp_drawable_bpp(layer_ID);
-    //seams_number = vals->seams_number;
+    gimp_drawable_offsets(layer_ID, &x_off, &y_off);
+    rgb_buffer = rgb_buffer_from_layer(layer_ID);
 
 	if (vals->horizontally == TRUE) printf("\n horizontally1 \n");
 	if (vals->vertically == TRUE) printf("\n vertically1 \n");
-	
+
     if (vals->vertically) { //check resize direction
     	new_width = old_width;
         new_height = old_height + seams_number;
@@ -279,7 +290,7 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
 
     carver = lqr_carver_new(rgb_buffer, old_width, old_height, bpp);
 
-    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_BRIGHT, (void*) &params);
+    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_BRIGHTNESS, (void*) &params);
     lqr_carver_init(carver, delta_x, rigidity);
     lqr_carver_set_progress(carver, progress);
     lqr_carver_set_resize_order (carver, res_order);
@@ -289,12 +300,21 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
 	if (vals->horizontally == TRUE) printf("\n horizontally3 \n");
 	if (vals->vertically == TRUE) printf("\n vertically3 \n");
 
-
-    gimp_layer_resize(layer_ID, new_width, new_height, 0, 0);
+    if (vals->resize_canvas == TRUE) {
+      gimp_image_resize (image_ID, new_width, new_height, -x_off, -y_off);
+      gimp_layer_resize_to_image_size (layer_ID);
+    } else {
+      gimp_layer_resize (layer_ID, new_width, new_height, 0, 0);
+    }
 
     gint ntiles = new_width / gimp_tile_width() + 1;
     gimp_tile_cache_size((gimp_tile_width() * gimp_tile_height() * ntiles * 4 * 2) / 1024 + 1);
     write_carver_to_layer(carver, layer_ID);
+
+    gimp_drawable_set_visible (layer_ID, TRUE);
+    gimp_image_set_active_layer (image_ID, layer_ID);
+
+    return;
 }
 
 void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {

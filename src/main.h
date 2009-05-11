@@ -8,7 +8,7 @@
 #define DATA_KEY_UI_VALS 	"plug_in_dct_carver_ui"
 
 typedef enum direction_type_t {
-	vertically =0,
+	vertically = 0,
 	horizontally
 } direction_type;
 
