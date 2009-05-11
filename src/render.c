@@ -167,7 +167,7 @@ gint clamp_offset_to_border(gint base, gint offset, gint lower_border, gint uppe
     return offset;
 }
 
-gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReaderWindow *rw) {
+gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReadingWindow *rw) {
 
     gint i, ii, j, jj;
     gint radius = lqr_rwindow_get_radius(rw);  //radius of the window is equal to dct atom blocksize
@@ -189,7 +189,7 @@ gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReaderWind
     return ABS(sum);
 }
 
-gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReaderWindow *rw, gpointer extra_data) {
+gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gpointer extra_data) {
     /* read parameters */
     EnergyParameters * params = (EnergyParameters *) extra_data;
     gint k1, k2;
@@ -221,7 +221,7 @@ guchar* rgb_buffer_from_layer(gint layer_ID) {
     gint w = gimp_drawable_width(layer_ID);
     gint h = gimp_drawable_height(layer_ID);
     gint bpp = gimp_drawable_bpp(layer_ID);
-    TRY_N_N(rgb_buffer = g_try_new(guchar, bpp * w * h));
+    rgb_buffer = g_try_new(guchar, bpp * w * h);
     GimpDrawable* drawable = gimp_drawable_get(layer_ID);
     GimpPixelRgn rgn_in;
 
@@ -292,7 +292,7 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
 
     carver = lqr_carver_new(rgb_buffer, old_width, old_height, bpp);
 
-    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_BRIGHT, (void*) &params);
+    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_BRIGHTNESS, (void*) &params);
     lqr_carver_init(carver, delta_x, rigidity);
     lqr_carver_set_progress(carver, progress);
     lqr_carver_set_resize_order (carver, res_order);
