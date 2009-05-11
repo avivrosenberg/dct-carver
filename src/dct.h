@@ -10,8 +10,6 @@
 #define ATOMDB_INDEX(blocksize,k1,k2) ((blocksize)*(k1) + (k2))
 #define IS_EDGE_ATOM(blocksize,k1,k2) (((k1)+(k2)) < ((blocksize)-2))
 
-#define DOUBLE2GUCHAR(d,min,max) (ROUND(255*(((d) - (min))/((max)-(min)))))
-#define GUCHAR2DOUBLE(g) (((gdouble)g)/255.0)
 
 /* 	Defintions */
 

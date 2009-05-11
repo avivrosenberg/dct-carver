@@ -24,12 +24,9 @@ static PlugInUIVals *ui_state = NULL;
 /*  Public functions  */
 
 gboolean
-gui_dialog(gint32				image_ID,
-           GimpDrawable			*drawable,
-           PlugInVals			*vals,
-           PlugInImageVals		*image_vals,
-           PlugInDrawableVals	*drawable_vals,
-           PlugInUIVals			*ui_vals) {
+gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImageVals *image_vals, 
+           PlugInDrawableVals *drawable_vals, PlugInUIVals *ui_vals) {
+
     GtkWidget *dialog;
     GtkWidget *main_vbox;
     
@@ -172,7 +169,7 @@ gui_dialog(gint32				image_ID,
 	gtk_widget_show(resize_vbox);
 	gtk_container_add(GTK_CONTAINER(resize_frame), resize_vbox);
     
-		//seams number - start
+	//seams number - start
     seams_number_alignment = gtk_alignment_new(0.5, 0.5, 1, 1);
     gtk_widget_show(seams_number_alignment);
     gtk_box_pack_start(GTK_BOX(resize_vbox), seams_number_alignment, TRUE, TRUE, 0);
@@ -191,9 +188,9 @@ gui_dialog(gint32				image_ID,
                                       -100, 100, 1, 1, 0, 5, 0);
     gtk_box_pack_start(GTK_BOX(seams_number_hbox), seams_number_spinbutton, FALSE, FALSE, 0);
     gtk_widget_show(seams_number_spinbutton);
-    	//seams number - end
+   	//seams number - end
 	
-		//direction - start
+	//direction - start
 	
 	direction_alignment = gtk_alignment_new(0.4, 0.5, 1, 1);
     gtk_widget_show(direction_alignment);
@@ -209,7 +206,7 @@ gui_dialog(gint32				image_ID,
 	gtk_widget_show(direction_radio_button_vbox);
 	gtk_container_add(GTK_CONTAINER(direction_alignment), direction_radio_button_vbox);
 	
-		//direction - end
+	//direction - end
 
     resize_frame_label = gtk_label_new("<b>Resize parameters</b>");
     gtk_widget_show(resize_frame_label);
@@ -265,7 +262,7 @@ gui_dialog(gint32				image_ID,
     /* Signals:
      * */
     g_signal_connect_swapped(preview, "invalidated",
-                             G_CALLBACK(dct_energy),
+                             G_CALLBACK(dct_energy_preview),
                              drawable);
 
     g_signal_connect_swapped(blocksize_spinbutton_adj, "value_changed",
@@ -280,10 +277,8 @@ gui_dialog(gint32				image_ID,
                              G_CALLBACK(gimp_preview_invalidate),
                              preview);
                                                    
-
-    //dct_energy (drawable, GIMP_PREVIEW (preview));
-
     g_signal_connect(blocksize_spinbutton_adj, "value_changed",
+
                      G_CALLBACK(gimp_int_adjustment_update),
                      &(vals->blocksize));
 
@@ -307,3 +302,9 @@ gui_dialog(gint32				image_ID,
 
     return run;
 }
+
+void
+error(const gchar* message) {
+	gimp_message(message);
+}
+
