@@ -267,8 +267,10 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
 
 	if (vals->direction == horizontally) printf("\n horizontally1 \n");
 	if (vals->direction == vertically) printf("\n vertically1 \n");
+	if (vals->new_layer == TRUE) printf("\n new_layer is on \n");
+	if (vals->resize_canvas == TRUE) printf("\n resize_canvas \n");
 	
-    if (vals->direction == vertically) { //check resize direction
+    if (0) { //check resize direction
     	new_width = old_width;
         new_height = old_height + seams_number;
         res_order = LQR_RES_ORDER_VERT; 

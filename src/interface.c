@@ -15,6 +15,7 @@
 
 /*  Local function prototypes  */
 
+void toggle(GtkToggleButton *toggle_button, gpointer data);
 
 /*  Local variables  */
 
@@ -256,7 +257,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_frame_set_label_widget(GTK_FRAME(options_frame), options_frame_label);
     gtk_label_set_use_markup(GTK_LABEL(options_frame_label), TRUE);
 	
-	// output options - start
+	// output options - end
 
 
     /* Signals:
@@ -278,7 +279,6 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                              preview);
                                                    
     g_signal_connect(blocksize_spinbutton_adj, "value_changed",
-
                      G_CALLBACK(gimp_int_adjustment_update),
                      &(vals->blocksize));
 
@@ -293,6 +293,12 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     g_signal_connect(seams_number_spinbutton_adj, "value_changed",
                      G_CALLBACK(gimp_int_adjustment_update),
                      &(vals->seams_number));
+                     
+    g_signal_connect (new_layer_button, "toggled",
+                     G_CALLBACK (toggle), &(vals->new_layer));
+                     
+    g_signal_connect (resize_canvas_button, "toggled",
+                     G_CALLBACK (toggle), &(vals->resize_canvas));           
 
     gtk_widget_show(dialog);
 
@@ -306,5 +312,10 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 void
 error(const gchar* message) {
 	gimp_message(message);
+}
+
+void
+toggle(GtkToggleButton *toggle_button, gpointer data) {
+	*((gboolean*)data) = gtk_toggle_button_get_active(toggle_button);
 }
 
