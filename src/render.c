@@ -247,9 +247,11 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     GimpDrawable *drawable;
     GimpPixelRgn rgn_in;
     gint layer_ID = gimp_image_get_active_layer(image_ID);
-    guchar* rgb_buffer = rgb_buffer_from_layer(layer_ID);
+    guchar* rgb_buffer;
     gint delta_x = 1;
     gint rigidity = 0;
+    gint x_off,y_off;
+    gchar new_layer_name[LQR_MAX_NAME_LENGTH];
 
     params.edges = vals->edges;
     params.textures = vals->textures;
@@ -260,17 +262,26 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
         init_dctatomdb(&dctAtomDB, vals->blocksize);
     }
 
+    if (vals->new_layer) {
+      g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "%s (copy)", gimp_drawable_get_name(layer_ID));
+      layer_ID = gimp_layer_copy(layer_ID);
+      gimp_image_add_layer(image_ID, layer_ID, -1);
+      gimp_drawable_set_name(layer_ID, new_layer_name);
+      gimp_drawable_set_visible(layer_ID, FALSE);
+    }
+
     old_width = gimp_drawable_width(layer_ID);
     old_height = gimp_drawable_height(layer_ID);
     bpp = gimp_drawable_bpp(layer_ID);
-    //seams_number = vals->seams_number;
+    gimp_drawable_offsets(layer_ID, &x_off, &y_off);
+    rgb_buffer = rgb_buffer_from_layer(layer_ID);
 
 	if (vals->direction == horizontally) printf("\n horizontally1 \n");
 	if (vals->direction == vertically) printf("\n vertically1 \n");
 	if (vals->new_layer == TRUE) printf("\n new_layer is on \n");
 	if (vals->resize_canvas == TRUE) printf("\n resize_canvas \n");
 	
-    if (0) { //check resize direction
+    if (vals->direction == vertically) { //check resize direction
     	new_width = old_width;
         new_height = old_height + seams_number;
         res_order = LQR_RES_ORDER_VERT; 
@@ -291,12 +302,21 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
 	if (vals->direction == horizontally) printf("\n horizontally3 \n");
 	if (vals->direction == vertically) printf("\n vertically3 \n");
 
-
-    gimp_layer_resize(layer_ID, new_width, new_height, 0, 0);
+    if (vals->resize_canvas == TRUE) {
+      gimp_image_resize (image_ID, new_width, new_height, -x_off, -y_off);
+      gimp_layer_resize_to_image_size (layer_ID);
+    } else {
+      gimp_layer_resize (layer_ID, new_width, new_height, 0, 0);
+    }
 
     gint ntiles = new_width / gimp_tile_width() + 1;
     gimp_tile_cache_size((gimp_tile_width() * gimp_tile_height() * ntiles * 4 * 2) / 1024 + 1);
     write_carver_to_layer(carver, layer_ID);
+
+    gimp_drawable_set_visible (layer_ID, TRUE);
+    gimp_image_set_active_layer (image_ID, layer_ID);
+
+    return;
 }
 
 void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {
