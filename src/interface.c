@@ -30,6 +30,10 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 
     GtkWidget *dialog;
     GtkWidget *main_vbox;
+    GtkWidget *energy_hbox;
+    GtkWidget *energy_vbox;
+    GtkWidget *carver_hbox;
+    GtkWidget *separator;
     
     GtkWidget *preview;
     
@@ -63,7 +67,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *direction_radio_button_vbox;
     
     GtkWidget *options_frame;
-    GtkWidget *options_hbox;
+    GtkWidget *options_vbox;
     GtkWidget *new_layer_button;
     GtkWidget *resize_canvas_button;
     GtkWidget *options_frame_label;
@@ -90,25 +94,35 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     main_vbox = gtk_vbox_new(FALSE, 6);
     gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), main_vbox);
     gtk_widget_show(main_vbox);
+    
+    //energy parameters - start
+    
+    energy_hbox = gtk_hbox_new(FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(main_vbox), energy_hbox, TRUE, TRUE, 0);
+    gtk_widget_show(energy_hbox);
 	
 	//preview - start
 	
     preview = gimp_drawable_preview_new(drawable, &(vals->preview));
     gimp_preview_set_update(GIMP_PREVIEW(preview), vals->preview);
-    gtk_box_pack_start(GTK_BOX(main_vbox), preview, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(energy_hbox), preview, TRUE, TRUE, 0);
     gtk_widget_show(preview);
     
 	//preview - end
 
+	energy_vbox = gtk_vbox_new(FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(energy_hbox), energy_vbox, TRUE, TRUE, 0);
+    gtk_widget_show(energy_vbox);
+	
 
 	//blocksize - start
 
     blocksize_frame = gtk_frame_new(NULL);
     gtk_widget_show(blocksize_frame);
-    gtk_box_pack_start(GTK_BOX(main_vbox), blocksize_frame, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(energy_vbox), blocksize_frame, TRUE, TRUE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(blocksize_frame), 6);
 
-    blocksize_alignment = gtk_alignment_new(0.5, 0.5, 1, 1);
+    blocksize_alignment = gtk_alignment_new(0, 0, 1, 1);
     gtk_widget_show(blocksize_alignment);
     gtk_container_add(GTK_CONTAINER(blocksize_frame), blocksize_alignment);
     gtk_alignment_set_padding(GTK_ALIGNMENT(blocksize_alignment), 6, 6, 6, 6);
@@ -118,8 +132,8 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_container_add(GTK_CONTAINER(blocksize_alignment), blocksize_hbox);
 
     blocksize_label = gtk_label_new_with_mnemonic("_Block Size:");
-    gtk_widget_show(blocksize_label);
     gtk_box_pack_start(GTK_BOX(blocksize_hbox), blocksize_label, FALSE, FALSE, 6);
+    gtk_widget_show(blocksize_label);
     gtk_label_set_justify(GTK_LABEL(blocksize_label), GTK_JUSTIFY_RIGHT);
 
     blocksize_spinbutton = gimp_spin_button_new(&blocksize_spinbutton_adj, vals->blocksize,
@@ -138,7 +152,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     /* Sliders Table:
      * */
     sliders_frame = gtk_frame_new(NULL);
-    gtk_box_pack_start(GTK_BOX(main_vbox), sliders_frame, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(energy_vbox), sliders_frame, TRUE, TRUE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(sliders_frame), 6);
     gtk_widget_show(sliders_frame);
 
@@ -167,12 +181,24 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                                         TRUE, 0, 0,
                                         ("Scale factor for DCT atoms coresponding to textures"), NULL);
 
+	//energy parametrs - end
+	
+	//***************************************************
 
+	separator = gtk_hseparator_new();
+	gtk_box_pack_start(GTK_BOX(main_vbox), separator, TRUE, TRUE, 0);
+	gtk_widget_show(separator);
+	
+	carver_hbox = gtk_hbox_new(FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(main_vbox), carver_hbox, TRUE, TRUE, 0);
+	gtk_widget_show(carver_hbox);
+	
+	
 	//resize parameters - start
 
     resize_frame = gtk_frame_new(NULL);
     gtk_widget_show(resize_frame);
-    gtk_box_pack_start(GTK_BOX(main_vbox), resize_frame, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(carver_hbox), resize_frame, TRUE, TRUE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(resize_frame), 6);
 	
 	resize_vbox = gtk_vbox_new(FALSE, 0);
@@ -221,7 +247,8 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_box_pack_start(GTK_BOX(resize_vbox), radio_frame, TRUE, TRUE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(radio_frame), 6);
 	
-	radio_vbox = gtk_vbox_new(TRUE, 0);
+	radio_vbox = gtk_vbox_new(FALSE, 0);
+	gtk_container_add(GTK_CONTAINER(radio_frame), radio_vbox);
 	gtk_widget_show(radio_vbox);
 	
 	vert = gtk_radio_button_new_with_label(NULL, "Vertically");
@@ -235,8 +262,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 	gtk_box_pack_start(GTK_BOX(radio_vbox), vert, TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(radio_vbox), horizon, TRUE, TRUE, 0);
 	
-	gtk_container_add(GTK_CONTAINER(radio_frame), radio_vbox);
-	gtk_box_pack_start(GTK_BOX(resize_vbox), radio_frame, TRUE, TRUE, 2);
+	
 	
 	radio_frame_label = gtk_label_new("<b>Carving direction</b>");
     gtk_widget_show(radio_frame_label);
@@ -258,17 +284,17 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 	
 	options_frame = gtk_frame_new(NULL);
     gtk_widget_show(options_frame);
-    gtk_box_pack_start(GTK_BOX(main_vbox), options_frame, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(carver_hbox), options_frame, TRUE, TRUE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(options_frame), 6);
 	
-	options_hbox = gtk_hbox_new (FALSE, 4);
-	gtk_container_add(GTK_CONTAINER(options_frame), options_hbox);
-    gtk_widget_show (options_hbox);
+	options_vbox = gtk_vbox_new (FALSE, 4);
+	gtk_container_add(GTK_CONTAINER(options_frame), options_vbox);
+    gtk_widget_show (options_vbox);
 
     new_layer_button =
       gtk_check_button_new_with_label (("Output on a new layer"));
 
-   	gtk_box_pack_start (GTK_BOX (options_hbox), new_layer_button, FALSE, FALSE, 0);
+   	gtk_box_pack_start (GTK_BOX (options_vbox), new_layer_button, FALSE, FALSE, 0);
    	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (new_layer_button),
 				vals->new_layer);
    	gtk_widget_show (new_layer_button);
@@ -280,7 +306,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
    	resize_canvas_button =
      gtk_check_button_new_with_label (("Resize image canvas"));
 
-   	gtk_box_pack_start (GTK_BOX (options_hbox), resize_canvas_button, FALSE, FALSE, 0);
+   	gtk_box_pack_start (GTK_BOX (options_vbox), resize_canvas_button, FALSE, FALSE, 0);
    	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (resize_canvas_button),
 				vals->resize_canvas);
    	gtk_widget_show (resize_canvas_button);
