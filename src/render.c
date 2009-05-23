@@ -176,10 +176,6 @@ gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReadingWin
 
     for (i = -radius + 1; i <= radius; i++) {
         for (j = -radius + 1; j <= radius; j++) {
-            /* lqr_rwindow_read (rw, i, j, 0) reads the image brightness
-             * at pixel (x + i, y + j)
-             * The last argument (i.e. the channel) is 0 because
-             * we're using LQR_ER_BRIGHT (which only returns one channel) */
             ii = clamp_offset_to_border(x, i, 0, h - 1);
             jj = clamp_offset_to_border(y, j, 0, w - 1);
             sum += atom.matrix[i+radius-1][j+radius-1] * lqr_rwindow_read(rw, ii, jj, 0);
@@ -290,7 +286,7 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
 
     carver = lqr_carver_new(rgb_buffer, old_width, old_height, bpp);
 
-    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_BRIGHTNESS, (void*) &params);
+    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_LUMA, (void*) &params);
     lqr_carver_init(carver, delta_x, rigidity);
     lqr_carver_set_progress(carver, progress);
     lqr_carver_set_resize_order (carver, res_order);
