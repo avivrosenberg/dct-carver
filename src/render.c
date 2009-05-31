@@ -5,6 +5,7 @@
 #include <lqr.h>
 
 #include "dct.h"
+#include "alloc.h"
 #include "main.h"
 #include "render.h"
 
@@ -170,7 +171,7 @@ gint clamp_offset_to_border(gint base, gint offset, gint lower_border, gint uppe
 gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReadingWindow *rw) {
 
     gint i, ii, j, jj;
-    gint radius = lqr_rwindow_get_radius(rw);  //radius of the window is equal to dct atom blocksize
+    gint radius = lqr_rwindow_get_radius(rw);  //radius of the window is dct atom blocksize/2
     gdouble sum = 0;
     DCTAtom atom = get_atom(dctAtomDB, k1, k2);
 
@@ -195,6 +196,37 @@ gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gp
     gdouble factor = 1.0;
     gdouble max_sum = 0;
     gdouble curr_sum;
+
+    if (blocksize == 8) { //use fast DCT package
+        double **data = alloc_2d_double(blocksize, blocksize);
+        double max;
+        gint i,j,ii,jj,k1max,k2max;
+        gint radius = lqr_rwindow_get_radius(rw);
+
+        for (i = -radius + 1; i <= radius; i++) {
+            for (j = -radius + 1; j <= radius; j++) {
+                ii = clamp_offset_to_border(x, i, 0, h - 1);
+                jj = clamp_offset_to_border(y, j, 0, w - 1);
+                data[i+radius-1][j+radius-1] = lqr_rwindow_read(rw, ii, jj, 0);
+            }
+        }
+       
+        ddct8x8s(1, data); //fast DCT
+        max = data[0][1]; //ignoring DC
+        for (k1 = 0; k1 < blocksize; k1++) {
+            for (k2 = 2; k2 < blocksize; k2++) {
+                if (max > data[k1][k2]) {
+                    max = data[k1][k2]; 
+                    k1max = k1; k2max = k2;
+                }
+            }
+        }
+        if (IS_EDGE_ATOM(blocksize,k1max,k2max)) {
+            return (((gfloat)max) * edges);
+        } else {
+            return (((gfloat)max) * textures);
+        }
+    } //end fast DCT
 
     for (k1 = 0; k1 < blocksize; k1++) {
         for (k2 = 0; k2 < blocksize; k2++) {

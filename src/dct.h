@@ -31,9 +31,11 @@ typedef struct {
 
 /* Initialize the Global database with the atoms */
 void init_dctatomdb(DCTAtomDB* _db, gint _blocksize);
-
 void atomdb_free(DCTAtomDB _db) ;
-
 DCTAtom get_atom(DCTAtomDB dctAtomDB, gint k1, gint k2);
+
+void ddct8x8s(int isgn, double **a);
+void ddct16x16s(int isgn, double **a);
+void ddct2d(int n1, int n2, int isgn, double **a, double *t, int *ip, double *w);
 
 #endif /* __DCT_H__ */
