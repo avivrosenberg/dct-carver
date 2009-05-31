@@ -201,7 +201,7 @@ gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gp
             if ((!k1) && (!k2)) continue;
 
             curr_sum = convolve(k1, k2, x, y, w, h, rw);
-
+            
             if (curr_sum > max_sum) {
                 max_sum = curr_sum;
                 factor = (IS_EDGE_ATOM(blocksize, k1, k2) ? (edges) : (textures));
@@ -285,11 +285,11 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     }
 
     carver = lqr_carver_new(rgb_buffer, old_width, old_height, bpp);
-
-    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_LUMA, (void*) &params);
     lqr_carver_init(carver, delta_x, rigidity);
+    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_LUMA, (void*) &params);
     lqr_carver_set_progress(carver, progress);
     lqr_carver_set_resize_order (carver, res_order);
+    lqr_carver_set_use_cache(carver, TRUE);
     if (vals->horizontally == TRUE) printf("\n horizontally2 \n");
 	if (vals->vertically == TRUE) printf("\n vertically2 \n");
     lqr_carver_resize(carver, new_width, new_height);
@@ -306,6 +306,7 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     gint ntiles = new_width / gimp_tile_width() + 1;
     gimp_tile_cache_size((gimp_tile_width() * gimp_tile_height() * ntiles * 4 * 2) / 1024 + 1);
     write_carver_to_layer(carver, layer_ID);
+    lqr_carver_destroy(carver);
 
     gimp_drawable_set_visible (layer_ID, TRUE);
     gimp_image_set_active_layer (image_ID, layer_ID);
