@@ -20,37 +20,57 @@ dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_n
     gint ii, jj, k1, k2, max_k1, max_k2;
     gdouble max_in_pixel, factor, sum, luminance, r, g, b;
     DCTAtom atom;
+    double** data = alloc_2d_double(8,8);
 
     for (j = 0; j < width; j++) {
         gint left = j - (CENTER_COL(blocksize) - 1);
         gint right = j + blocksize - CENTER_COL(blocksize);
         max_in_pixel = 0;
-
-        for (k1 = 0; k1 < blocksize; k1++) {
-            for (k2 = 0; k2 < blocksize; k2++) {
-                if ((!k1) && (!k2)) continue;
-
-                sum = 0;
-                atom = get_atom(dctAtomDB, k1, k2);
-
-                for (ii = 0; ii < blocksize; ii++) {
-                    for (jj = left; jj <= right; jj++) {
-                        sum +=  current_rows[ii][CLAMP(jj, 0, width - 1)] * atom.matrix[ii][(jj-left)];
+        
+        if (blocksize == 8) { //use fast dct
+            for (ii = 0; ii < blocksize; ii++) {
+                for (jj = left; jj <= right; jj++) {
+                    data[ii][jj-left] = current_rows[ii][CLAMP(jj, 0, width - 1)];
+                }
+            }
+            ddct8x8s(1, data); //fast DCT
+            max_in_pixel = data[0][1]; //ignoring DC
+            for (k1 = 0; k1 < blocksize; k1++) {
+                for (k2 = 2; k2 < blocksize; k2++) {
+                    if (max_in_pixel > data[k1][k2]) {
+                        max_in_pixel = data[k1][k2]; 
+                        max_k1 = k1; max_k2 = k2;
                     }
                 }
+            }
+        } else {
+            for (k1 = 0; k1 < blocksize; k1++) {
+                for (k2 = 0; k2 < blocksize; k2++) {
+                    if ((!k1) && (!k2)) continue;
 
-                if (ABS(sum) > max_in_pixel) {
-                    max_in_pixel = ABS(sum);
-                    max_k1 = k1; max_k2 = k2;
-                    factor = (IS_EDGE_ATOM(blocksize, k1, k2) ? ((gdouble)vals.edges) : ((gdouble)vals.textures));
-                }
+                    sum = 0;
+                    atom = get_atom(dctAtomDB, k1, k2);
 
-            } //k2
-        } //k1
+                    for (ii = 0; ii < blocksize; ii++) {
+                        for (jj = left; jj <= right; jj++) {
+                            sum +=  current_rows[ii][CLAMP(jj, 0, width - 1)] * atom.matrix[ii][(jj-left)];
+                        }
+                    }
+
+                    if (ABS(sum) > max_in_pixel) {
+                        max_in_pixel = ABS(sum);
+                        max_k1 = k1; max_k2 = k2;
+                        factor = (IS_EDGE_ATOM(blocksize, k1, k2) ? ((gdouble)vals.edges) : ((gdouble)vals.textures));
+                    }
+
+                } //k2
+            } //k1
+        } //else
         factor = (IS_EDGE_ATOM(blocksize, max_k1, max_k2) ? ((gdouble)vals.edges) : ((gdouble)vals.textures));
         max_in_pixel *= factor;
         energy_image[row_number*width + j] = max_in_pixel;
     } //j
+    free_2d_double(data);
 }
 
 static void
@@ -221,6 +241,7 @@ gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gp
                 }
             }
         }
+        free_2d_double(data);
         if (IS_EDGE_ATOM(blocksize,k1max,k2max)) {
             return (((gfloat)max) * edges);
         } else {
