@@ -66,7 +66,7 @@ void atomdb_free_matrix(gint blocksize, DCTAtomsMatrix dctAtomsMatrix) {
     g_free(dctAtomsMatrix);
 }
 
-/* 	Public function */
+/* 	Public functions */
 
 /* Initialize the Global database with the atoms */
 
@@ -86,4 +86,35 @@ get_atom(DCTAtomDB dctAtomDB, gint k1, gint k2) {
     DCTAtom retval;
     retval.matrix = dctAtomDB.db[ATOMDB_INDEX(dctAtomDB.blocksize,k1,k2)];
     return retval;
+}
+
+//void ddct8x8s(int isgn, double **a);
+//void ddct16x16s(int isgn, double **a);
+//void ddct2d(int n1, int n2, int isgn, double **a, double *t, int *ip, double *w);
+
+void ddctNxNs(int n, int isgn, double **a) {
+    int* ip;
+    double* w;
+
+    ip = alloc_1d_int(2 + (int) sqrt(n/2 + 0.5));
+    w = alloc_1d_double(n*3/2);
+
+    ip[0] = 0;
+    ddct2d(n, n, isgn, a, NULL, ip, w);
+}
+
+gfloat weighted_max_dct_correlation(int blocksize, double** dct_data, gfloat edges, gfloat textures) {
+    int k1, k2, k1max, k2max;
+    double max = 0, currval;
+    
+    for (k1 = 0; k1 < blocksize; k1++) {
+        for (k2 = 0; k2 < blocksize; k2++) {
+            currval = ABS(dct_data[k1][k2]);
+            if ( (max <= currval) && (k1 || k2) ) {
+                    max = currval; 
+                    k1max = k1; k2max = k2;
+            }
+        }
+    }
+    return (IS_EDGE_ATOM(blocksize,k1max,k2max) ? max*edges : max*textures);
 }

@@ -1,3 +1,6 @@
+#ifndef __ALLOC_H__
+#define __ALLOC_H__
+
 /* ---- memory allocation ---- */
 
 
@@ -18,3 +21,4 @@ void free_3d_int(int ***iii);
 double ***alloc_3d_double(int n1, int n2, int n3);
 void free_3d_double(double ***ddd);
 
+#endif /* __ALLOC_H__ */

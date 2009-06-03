@@ -5,7 +5,6 @@
 #include <lqr.h>
 
 #include "dct.h"
-#include "alloc.h"
 #include "main.h"
 #include "render.h"
 
@@ -20,29 +19,25 @@ dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_n
     gint ii, jj, k1, k2, max_k1, max_k2;
     gdouble max_in_pixel, factor, sum, luminance, r, g, b;
     DCTAtom atom;
-    double** data = alloc_2d_double(8,8);
+    double** data = alloc_2d_double(blocksize,blocksize);
+    int* ip = alloc_1d_int(2 + (int) sqrt(blocksize/2 + 0.5));
+    double* w = alloc_1d_double(blocksize*3/2);
 
+    ip[0] = 0;
     for (j = 0; j < width; j++) {
         gint left = j - (CENTER_COL(blocksize) - 1);
         gint right = j + blocksize - CENTER_COL(blocksize);
         max_in_pixel = 0;
         
-        if (blocksize == 8) { //use fast dct
+        if ((blocksize == 2) || (blocksize == 4) ||
+            (blocksize == 8) || (blocksize == 16)) { //use fast dct
             for (ii = 0; ii < blocksize; ii++) {
                 for (jj = left; jj <= right; jj++) {
                     data[ii][jj-left] = current_rows[ii][CLAMP(jj, 0, width - 1)];
                 }
             }
-            ddct8x8s(1, data); //fast DCT
-            max_in_pixel = data[0][1]; //ignoring DC
-            for (k1 = 0; k1 < blocksize; k1++) {
-                for (k2 = 2; k2 < blocksize; k2++) {
-                    if (max_in_pixel > data[k1][k2]) {
-                        max_in_pixel = data[k1][k2]; 
-                        max_k1 = k1; max_k2 = k2;
-                    }
-                }
-            }
+            ddct2d(blocksize, blocksize, -1, data, NULL, ip, w);
+            max_in_pixel = weighted_max_dct_correlation(blocksize, data, vals.edges, vals.textures); 
         } else {
             for (k1 = 0; k1 < blocksize; k1++) {
                 for (k2 = 0; k2 < blocksize; k2++) {
@@ -65,12 +60,14 @@ dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_n
 
                 } //k2
             } //k1
-        } //else
         factor = (IS_EDGE_ATOM(blocksize, max_k1, max_k2) ? ((gdouble)vals.edges) : ((gdouble)vals.textures));
         max_in_pixel *= factor;
+        } //else
         energy_image[row_number*width + j] = max_in_pixel;
     } //j
     free_2d_double(data);
+    free_1d_int(ip);
+    free_1d_double(w);
 }
 
 static void
@@ -213,13 +210,14 @@ gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gp
     gint blocksize = params->blocksize;
     gfloat edges = params->edges;
     gfloat textures = params->textures;
+    double** data = params->data;
     gdouble factor = 1.0;
     gdouble max_sum = 0;
     gdouble curr_sum;
 
-    if (blocksize == 8) { //use fast DCT package
-        double **data = alloc_2d_double(blocksize, blocksize);
-        double max;
+    if ((blocksize == 2) || (blocksize == 4) ||
+        (blocksize == 8) || (blocksize == 16)) { //use fast dct
+        gfloat max;
         gint i,j,ii,jj,k1max,k2max;
         gint radius = lqr_rwindow_get_radius(rw);
 
@@ -231,22 +229,9 @@ gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gp
             }
         }
        
-        ddct8x8s(1, data); //fast DCT
-        max = data[0][1]; //ignoring DC
-        for (k1 = 0; k1 < blocksize; k1++) {
-            for (k2 = 2; k2 < blocksize; k2++) {
-                if (max > data[k1][k2]) {
-                    max = data[k1][k2]; 
-                    k1max = k1; k2max = k2;
-                }
-            }
-        }
-        free_2d_double(data);
-        if (IS_EDGE_ATOM(blocksize,k1max,k2max)) {
-            return (((gfloat)max) * edges);
-        } else {
-            return (((gfloat)max) * textures);
-        }
+        ddct2d(blocksize, blocksize, -1, data, NULL, params->ip, params->w);
+        max = weighted_max_dct_correlation(blocksize, data, edges, textures);
+        return max; 
     } //end fast DCT
 
     for (k1 = 0; k1 < blocksize; k1++) {
@@ -305,6 +290,10 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     params.edges = vals->edges;
     params.textures = vals->textures;
     params.blocksize = vals->blocksize;
+    params.ip = alloc_1d_int(2 + (int) sqrt(vals->blocksize/2 + 0.5));
+    params.w = alloc_1d_double(vals->blocksize*3/2);
+    params.data = alloc_2d_double(vals->blocksize, vals->blocksize);
+    params.ip[0] = 0; 
 
     if (vals->blocksize != dctAtomDB.blocksize) {
         atomdb_free(dctAtomDB);
@@ -363,6 +352,10 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
 
     gimp_drawable_set_visible (layer_ID, TRUE);
     gimp_image_set_active_layer (image_ID, layer_ID);
+
+    free_1d_int(params.ip);
+    free_1d_double(params.w);
+    free_2d_double(params.data);
 
     return;
 }

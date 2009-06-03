@@ -9,7 +9,10 @@ struct EnergyParameters_ {
     gfloat  edges;
     gfloat  textures;
     gint	blocksize;
-} extra_pars;
+    int*    ip;
+    double* w;
+    double** data;
+};
 
 typedef struct EnergyParameters_ EnergyParameters;
 
