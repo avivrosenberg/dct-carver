@@ -92,15 +92,22 @@ get_atom(DCTAtomDB dctAtomDB, gint k1, gint k2) {
 //void ddct16x16s(int isgn, double **a);
 //void ddct2d(int n1, int n2, int isgn, double **a, double *t, int *ip, double *w);
 
-void ddctNxNs(int n, int isgn, double **a) {
-    int* ip;
-    double* w;
-
-    ip = alloc_1d_int(2 + (int) sqrt(n/2 + 0.5));
-    w = alloc_1d_double(n*3/2);
-
-    ip[0] = 0;
-    ddct2d(n, n, isgn, a, NULL, ip, w);
+void dctNxN(int n, double **data, int* ip, double* w) {
+    switch(n) {
+        case 2:
+        case 4:
+            ddct2d(n, n, -1, data, NULL, ip, w);
+            break;
+        case 8:
+            ddct8x8s(-1,data);
+            break;
+        case 16:
+            ddct16x16s(-1,data);
+            break;
+        default:
+            error("N (blocksize) wasn't a factor of 2 in dctNxN");
+            break;
+    }
 }
 
 gfloat weighted_max_dct_correlation(int blocksize, double** dct_data, gfloat edges, gfloat textures) {

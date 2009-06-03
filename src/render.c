@@ -36,7 +36,7 @@ dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_n
                     data[ii][jj-left] = current_rows[ii][CLAMP(jj, 0, width - 1)];
                 }
             }
-            ddct2d(blocksize, blocksize, -1, data, NULL, ip, w);
+            dctNxN(blocksize, data, ip, w);
             max_in_pixel = weighted_max_dct_correlation(blocksize, data, vals.edges, vals.textures); 
         } else {
             for (k1 = 0; k1 < blocksize; k1++) {
@@ -229,7 +229,7 @@ gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gp
             }
         }
        
-        ddct2d(blocksize, blocksize, -1, data, NULL, params->ip, params->w);
+        dctNxN(blocksize, data, params->ip, params->w);
         max = weighted_max_dct_correlation(blocksize, data, edges, textures);
         return max; 
     } //end fast DCT
