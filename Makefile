@@ -1,5 +1,5 @@
-SOURCES = src/*.c
-COMP_FLAGS = -ggdb3 `gimptool-2.0 --cflags` `pkg-config --cflags lqr-1`
+SOURCES = src/*.c src/fft2d/*.c
+COMP_FLAGS = -ggdb3 -DUSE_FFT2D_PTHREADS `gimptool-2.0 --cflags` `pkg-config --cflags lqr-1`
 LINK_FLAGS = `gimptool-2.0 --libs` `pkg-config --libs lqr-1`
 OUTPUT_DIR = $(HOME)/.gimp-2.6/plug-ins
 NAME = dct-carver
