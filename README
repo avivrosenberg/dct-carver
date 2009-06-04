@@ -1,12 +1,13 @@
 DCT-Carver
-This is a gimp plugin that implements seam-carving with novel DCT-based energy function.
+This is a gimp plugin that implements seam-carving with a novel DCT-based energy function.
 
-The seam-carving is iplemented by the LiquidRescale library by
-Carlo Baldassi (carlobaldassi@gmail.com) and can be obtained at
-http://liblqr.wikidot.com
+The seam-carving is implemented by the LiquidRescale library 
+written by Carlo Baldassi (carlobaldassi@gmail.com).
+It can be obtained at http://liblqr.wikidot.com.
 
 The files in src/fft2d are taken from the fft2d package by 
 Takuya OOURA (email: ooura@kurims.kyoto-u.ac.jp) and have not been changed. 
 The full package can be obtained at http://www.kurims.kyoto-u.ac.jp/~ooura/fft.html.
 
-To install, simple use 'make'. Note that libgimp-dev and LiquidRescale (liblqr) must be installed first.
+To install, simple use 'make'. Note that the GIMP, libgimp-dev and LiquidRescale (liblqr) must be installed first.
+

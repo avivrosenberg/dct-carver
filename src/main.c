@@ -30,7 +30,7 @@ static void run(const gchar      *name,
 const PlugInVals default_vals = {
     0.5f,	//edges
     0.5f,	//textures
-    4,	//blocksize
+    8,	//blocksize
     20,	//seams_number
     FALSE,	//preview
     FALSE,	//new_layer

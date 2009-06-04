@@ -136,8 +136,8 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_widget_show(blocksize_label);
     gtk_label_set_justify(GTK_LABEL(blocksize_label), GTK_JUSTIFY_RIGHT);
 
-    blocksize_spinbutton = gimp_spin_button_new(&blocksize_spinbutton_adj, vals->blocksize,
-                                      2, 16, 1, 1, 0, 5, 0);
+    blocksize_spinbutton = gimp_spin_button_new(&blocksize_spinbutton_adj, vals->blocksize, 2, 16, 1, 1, 0, 5, 0);
+    //blocksize_spinbutton = gimp_int_combo_box_new("2",2,"4",4,"8",8,"16",16,NULL);
     gtk_box_pack_start(GTK_BOX(blocksize_hbox), blocksize_spinbutton, FALSE, FALSE, 0);
     gtk_widget_show(blocksize_spinbutton);
 
