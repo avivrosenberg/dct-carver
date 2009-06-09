@@ -35,9 +35,9 @@ const PlugInVals default_vals = {
     FALSE,	//preview
     FALSE,	//new_layer
     TRUE,	//resize_canvas
+    TRUE,   //output_energy
     TRUE,	//vertically
-    FALSE,	//horizontally
-    vertically	//direction
+    FALSE	//horizontally
 };
 
 const PlugInImageVals default_image_vals = {
@@ -122,10 +122,6 @@ run(const gchar      *name,
 
     image_ID = param[1].data.d_image;
 
-    //if (gimp_drawable_is_rgb(param[2].data.d_drawable)) {
-    //	gimp_image_convert_grayscale(image_ID);
-    //}
-
     /*  Get the specified drawable  */
     //drawable_orig = gimp_drawable_get(param[2].data.d_drawable);
     //drawableID = gimp_layer_new_from_drawable(param[2].data.d_drawable, image_ID);
@@ -136,11 +132,8 @@ run(const gchar      *name,
     drawable = gimp_drawable_get(param[2].data.d_drawable);
     /*  Initialize with default values  */
     vals          = default_vals;
-
     image_vals    = default_image_vals;
-
     drawable_vals = default_drawable_vals;
-
     ui_vals       = default_ui_vals;
 
     init_dctatomdb(&dctAtomDB, vals.blocksize);
@@ -167,8 +160,7 @@ run(const gchar      *name,
 
             /* Display the dialog */
 
-            if (! gui_dialog(image_ID, drawable,
-                             &vals, &image_vals, &drawable_vals, &ui_vals)) {
+            if (! gui_dialog(image_ID, drawable, &vals, &image_vals, &drawable_vals, &ui_vals)) {
                 status = GIMP_PDB_CANCEL;
             }
 
