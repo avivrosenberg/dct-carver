@@ -35,7 +35,7 @@ const PlugInVals default_vals = {
     FALSE,	//preview
     FALSE,	//new_layer
     TRUE,	//resize_canvas
-    FALSE,	//output_energy
+    TRUE,	//output_energy
     TRUE,	//vertically
     FALSE	//horizontally
 };

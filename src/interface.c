@@ -42,8 +42,8 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *blocksize_frame;
     GtkWidget *blocksize_label;
     GtkWidget *blocksize_alignment;
-    GtkWidget *blocksize_spinbutton;
-    GtkObject *blocksize_spinbutton_adj;
+    GtkWidget *blocksize_combobox;
+    //GtkObject *blocksize_spinbutton_adj;
     GtkWidget *blocksize_frame_label;
     
     GtkWidget *sliders_frame;
@@ -58,6 +58,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *resize_vbox;
     GtkWidget *resize_frame_label;
     
+    gint width, height, seams_bound;
     GtkWidget *seams_number_label;
     GtkWidget *seams_number_alignment;
     GtkWidget *seams_number_hbox;
@@ -142,11 +143,10 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_label_set_justify(GTK_LABEL(blocksize_label), GTK_JUSTIFY_RIGHT);
 
     //blocksize_spinbutton = gimp_spin_button_new(&blocksize_spinbutton_adj, vals->blocksize, 2, 16, 1, 1, 0, 5, 0);
-    blocksize_spinbutton = gimp_int_combo_box_new("2",2,"4",4,"8",8,"16",16,NULL);
-    gimp_int_combo_box_connect(GIMP_INT_COMBO_BOX(blocksize_spinbutton), vals->blocksize, G_CALLBACK(change_blocksize), ui_vals);
-    
-    gtk_box_pack_start(GTK_BOX(blocksize_hbox), blocksize_spinbutton, FALSE, FALSE, 0);
-    gtk_widget_show(blocksize_spinbutton);
+    blocksize_combobox = gimp_int_combo_box_new("2",2,"4",4,"8",8,"16",16,NULL);
+    gimp_int_combo_box_connect(GIMP_INT_COMBO_BOX(blocksize_combobox), vals->blocksize, G_CALLBACK(change_blocksize), ui_vals);
+    gtk_box_pack_start(GTK_BOX(blocksize_hbox), blocksize_combobox, TRUE, TRUE, 0);
+    gtk_widget_show(blocksize_combobox);
 
     blocksize_frame_label = gtk_label_new("<b>Modify block size</b>");
     gtk_widget_show(blocksize_frame_label);
@@ -227,8 +227,12 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_box_pack_start(GTK_BOX(seams_number_hbox), seams_number_label, FALSE, FALSE, 6);
     gtk_label_set_justify(GTK_LABEL(seams_number_label), GTK_JUSTIFY_RIGHT);
 
+	width = drawable->width;
+	height = drawable->height;
+	seams_bound = width<height ? width : height;
+	
     seams_number_spinbutton = gimp_spin_button_new(&seams_number_spinbutton_adj, vals->seams_number,
-                                      -100, 100, 1, 1, 0, 5, 0);
+                                      -1*seams_bound, seams_bound, 1, 1, 0, 5, 0);
     gtk_box_pack_start(GTK_BOX(seams_number_hbox), seams_number_spinbutton, FALSE, FALSE, 0);
     gtk_widget_show(seams_number_spinbutton);
    	//seams number - end
@@ -332,7 +336,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 
     gimp_help_set_help_data (output_energy_button,
 			   ("Output the energy that was computed "
-			     "onto a new layer layer"), NULL);
+			     "onto a new image"), NULL);
 	
 	options_frame_label = gtk_label_new("<b>Output options</b>");
     gtk_widget_show(options_frame_label);
@@ -386,7 +390,10 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                      G_CALLBACK (toggle), &(vals->new_layer));
                      
     g_signal_connect (resize_canvas_button, "toggled",
-                     G_CALLBACK (toggle), &(vals->resize_canvas));           
+                     G_CALLBACK (toggle), &(vals->resize_canvas)); 
+                  
+    g_signal_connect (output_energy_button, "toggled",
+                     G_CALLBACK (toggle), &(vals->output_energy));          
 
     gtk_widget_show(dialog);
 
