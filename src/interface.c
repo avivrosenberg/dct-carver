@@ -47,6 +47,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *blocksize_frame_label;
     
     GtkWidget *sliders_frame;
+    GtkWidget *sliders_alignment;
     GtkWidget *sliders_frame_label;
     GtkWidget *sliders_table;
     GtkObject *edges_adj;
@@ -123,7 +124,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_box_pack_start(GTK_BOX(energy_vbox), blocksize_frame, TRUE, TRUE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(blocksize_frame), 6);
 
-    blocksize_alignment = gtk_alignment_new(0, 0, 1, 1);
+    blocksize_alignment = gtk_alignment_new(0, 0.5, 0, 0);
     gtk_widget_show(blocksize_alignment);
     gtk_container_add(GTK_CONTAINER(blocksize_frame), blocksize_alignment);
     gtk_alignment_set_padding(GTK_ALIGNMENT(blocksize_alignment), 6, 6, 6, 6);
@@ -140,7 +141,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     //blocksize_spinbutton = gimp_spin_button_new(&blocksize_spinbutton_adj, vals->blocksize, 2, 16, 1, 1, 0, 5, 0);
     blocksize_combobox = gimp_int_combo_box_new("2",2,"4",4,"8",8,"16",16,NULL);
     gimp_int_combo_box_connect(GIMP_INT_COMBO_BOX(blocksize_combobox), vals->blocksize, G_CALLBACK(change_blocksize), ui_vals);
-    gtk_box_pack_start(GTK_BOX(blocksize_hbox), blocksize_combobox, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(blocksize_hbox), blocksize_combobox, FALSE, FALSE, 0);
     gtk_widget_show(blocksize_combobox);
 
     blocksize_frame_label = gtk_label_new("<b>Modify block size</b>");
@@ -158,15 +159,15 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_container_set_border_width(GTK_CONTAINER(sliders_frame), 6);
     gtk_widget_show(sliders_frame);
 
-    sliders_frame_label = gtk_label_new("<b>Modify egde and texture preservation factors</b>");
-    gtk_widget_show(sliders_frame_label);
-    gtk_frame_set_label_widget(GTK_FRAME(sliders_frame), sliders_frame_label);
-    gtk_label_set_use_markup(GTK_LABEL(sliders_frame_label), TRUE);
+	sliders_alignment = gtk_alignment_new(0, 0.5, 0, 0);
+    gtk_widget_show(sliders_alignment);
+    gtk_container_add(GTK_CONTAINER(sliders_frame), sliders_alignment);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(sliders_alignment), 6, 6, 6, 6);
 
     sliders_table = gtk_table_new(2, 3, FALSE);
     gtk_table_set_col_spacings(GTK_TABLE(sliders_table), 6);
     gtk_table_set_row_spacings(GTK_TABLE(sliders_table), 2);
-    gtk_container_add(GTK_CONTAINER(sliders_frame), sliders_table);
+    gtk_container_add(GTK_CONTAINER(sliders_alignment), sliders_table);
     gtk_widget_show(sliders_table);
 
     row = 0;
@@ -182,6 +183,11 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                                         vals->textures, 0.0, 1.0, 0.01, 0.1, 2,
                                         TRUE, 0, 0,
                                         ("Scale factor for DCT atoms coresponding to textures"), NULL);
+
+	sliders_frame_label = gtk_label_new("<b>Modify egde and texture preservation factors</b>");
+    gtk_widget_show(sliders_frame_label);
+    gtk_frame_set_label_widget(GTK_FRAME(sliders_frame), sliders_frame_label);
+    gtk_label_set_use_markup(GTK_LABEL(sliders_frame_label), TRUE);
 
 	//energy parametrs - end
 	
