@@ -6,6 +6,7 @@
 
 #include "dct.h"
 #include "main.h"
+#include "interface.h"
 #include "render.h"
 
 /* 	Local variables */
@@ -15,10 +16,9 @@
 static void
 dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_number, gint width) {
     gint j;
-    gint blocksize = dctAtomDB.blocksize;
-    gint ii, jj, k1, k2, max_k1, max_k2;
-    gdouble max_in_pixel, factor, sum, luminance, r, g, b;
-    DCTAtom atom;
+    gint blocksize = vals.blocksize;
+    gint ii, jj;
+    gdouble max_in_pixel;
     double** data = alloc_2d_double(blocksize,blocksize);
     int* ip = alloc_1d_int(2 + (int) sqrt(blocksize/2 + 0.5));
     double* w = alloc_1d_double(blocksize*3/2);
@@ -29,40 +29,14 @@ dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_n
         gint right = j + blocksize - CENTER_COL(blocksize);
         max_in_pixel = 0;
         
-        if ((blocksize == 2) || (blocksize == 4) ||
-            (blocksize == 8) || (blocksize == 16)) { //use fast dct
-            for (ii = 0; ii < blocksize; ii++) {
-                for (jj = left; jj <= right; jj++) {
-                    data[ii][jj-left] = current_rows[ii][CLAMP(jj, 0, width - 1)];
-                }
+        for (ii = 0; ii < blocksize; ii++) {
+            for (jj = left; jj <= right; jj++) {
+                data[ii][jj-left] = current_rows[ii][CLAMP(jj, 0, width - 1)];
             }
-            dctNxN(blocksize, data, ip, w);
-            max_in_pixel = weighted_max_dct_correlation(blocksize, data, vals.edges, vals.textures); 
-        } else {
-            for (k1 = 0; k1 < blocksize; k1++) {
-                for (k2 = 0; k2 < blocksize; k2++) {
-                    if ((!k1) && (!k2)) continue;
+        }
+        dctNxN(blocksize, data, ip, w);
+        max_in_pixel = weighted_max_dct_correlation(blocksize, data, vals.edges, vals.textures); 
 
-                    sum = 0;
-                    atom = get_atom(dctAtomDB, k1, k2);
-
-                    for (ii = 0; ii < blocksize; ii++) {
-                        for (jj = left; jj <= right; jj++) {
-                            sum +=  current_rows[ii][CLAMP(jj, 0, width - 1)] * atom.matrix[ii][(jj-left)];
-                        }
-                    }
-
-                    if (ABS(sum) > max_in_pixel) {
-                        max_in_pixel = ABS(sum);
-                        max_k1 = k1; max_k2 = k2;
-                        factor = (IS_EDGE_ATOM(blocksize, k1, k2) ? ((gdouble)vals.edges) : ((gdouble)vals.textures));
-                    }
-
-                } //k2
-            } //k1
-        factor = (IS_EDGE_ATOM(blocksize, max_k1, max_k2) ? ((gdouble)vals.edges) : ((gdouble)vals.textures));
-        max_in_pixel *= factor;
-        } //else
         energy_image[row_number*width + j] = max_in_pixel;
     } //j
     free_2d_double(data);
@@ -185,69 +159,29 @@ gint clamp_offset_to_border(gint base, gint offset, gint lower_border, gint uppe
     return offset;
 }
 
-gdouble convolve(gint k1, gint k2, gint x, gint y, gint w, gint h, LqrReadingWindow *rw) {
+gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gpointer extra_data) {
+    /* read parameters */
+    EnergyParameters * params = (EnergyParameters *) extra_data;
+    gint blocksize = params->blocksize;
+    gfloat edges = params->edges;
+    gfloat textures = params->textures;
+    double** data = params->data;
 
-    gint i, ii, j, jj;
-    gint radius = lqr_rwindow_get_radius(rw);  //radius of the window is dct atom blocksize/2
-    gdouble sum = 0;
-    DCTAtom atom = get_atom(dctAtomDB, k1, k2);
+    gfloat max;
+    gint i,j,ii,jj;
+    gint radius = lqr_rwindow_get_radius(rw);
 
     for (i = -radius + 1; i <= radius; i++) {
         for (j = -radius + 1; j <= radius; j++) {
             ii = clamp_offset_to_border(x, i, 0, h - 1);
             jj = clamp_offset_to_border(y, j, 0, w - 1);
-            sum += atom.matrix[i+radius-1][j+radius-1] * lqr_rwindow_read(rw, ii, jj, 0);
+            data[i+radius-1][j+radius-1] = lqr_rwindow_read(rw, ii, jj, 0);
         }
     }
-
-    return ABS(sum);
-}
-
-gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gpointer extra_data) {
-    /* read parameters */
-    EnergyParameters * params = (EnergyParameters *) extra_data;
-    gint k1, k2;
-    gint blocksize = params->blocksize;
-    gfloat edges = params->edges;
-    gfloat textures = params->textures;
-    double** data = params->data;
-    gdouble factor = 1.0;
-    gdouble max_sum = 0;
-    gdouble curr_sum;
-
-    if ((blocksize == 2) || (blocksize == 4) ||
-        (blocksize == 8) || (blocksize == 16)) { //use fast dct
-        gfloat max;
-        gint i,j,ii,jj,k1max,k2max;
-        gint radius = lqr_rwindow_get_radius(rw);
-
-        for (i = -radius + 1; i <= radius; i++) {
-            for (j = -radius + 1; j <= radius; j++) {
-                ii = clamp_offset_to_border(x, i, 0, h - 1);
-                jj = clamp_offset_to_border(y, j, 0, w - 1);
-                data[i+radius-1][j+radius-1] = lqr_rwindow_read(rw, ii, jj, 0);
-            }
-        }
-       
-        dctNxN(blocksize, data, params->ip, params->w);
-        max = weighted_max_dct_correlation(blocksize, data, edges, textures);
-        return max; 
-    } //end fast DCT
-
-    for (k1 = 0; k1 < blocksize; k1++) {
-        for (k2 = 0; k2 < blocksize; k2++) {
-            if ((!k1) && (!k2)) continue;
-
-            curr_sum = convolve(k1, k2, x, y, w, h, rw);
-            
-            if (curr_sum > max_sum) {
-                max_sum = curr_sum;
-                factor = (IS_EDGE_ATOM(blocksize, k1, k2) ? (edges) : (textures));
-            }
-        }
-    }
-
-    return ((gfloat) max_sum*factor);
+   
+    dctNxN(blocksize, data, params->ip, params->w);
+    max = weighted_max_dct_correlation(blocksize, data, edges, textures);
+    return max; 
 }
 
 guchar* rgb_buffer_from_layer(gint layer_ID) {
@@ -274,12 +208,10 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     LqrCarver *carver;
     LqrProgress* progress = progress_init();
     LqrResizeOrder res_order = LQR_RES_ORDER_HOR;
-    gint y, bpp;
+    gint bpp;
     gint old_width, old_height;
     gint new_width, new_height;
     gint seams_number = vals->seams_number;
-    GimpDrawable *drawable;
-    GimpPixelRgn rgn_in;
     gint layer_ID = gimp_image_get_active_layer(image_ID);
     gint32 energy_image_ID, energy_layer_ID = -1;
     guchar* rgb_buffer;
@@ -295,11 +227,6 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     params.w = alloc_1d_double(vals->blocksize*3/2);
     params.data = alloc_2d_double(vals->blocksize, vals->blocksize);
     params.ip[0] = 0; 
-
-    if (vals->blocksize != dctAtomDB.blocksize) {
-        atomdb_free(dctAtomDB);
-        init_dctatomdb(&dctAtomDB, vals->blocksize);
-    }
 
     if (vals->new_layer) {
       g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "%s (copy)", gimp_drawable_get_name(layer_ID));
@@ -382,10 +309,7 @@ void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {
     guchar *output_image; //normalized energy image (for display)
     gint update_step;
 
-    if (vals.blocksize != dctAtomDB.blocksize) {
-        atomdb_free(dctAtomDB);
-        init_dctatomdb(&dctAtomDB, vals.blocksize);
-    }
+  
     if (preview) {
         gimp_preview_get_position(preview, &x1, &y1);
         gimp_preview_get_size(preview, &width, &height);

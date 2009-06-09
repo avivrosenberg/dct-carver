@@ -65,9 +65,6 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *seams_number_spinbutton;
     GtkObject *seams_number_spinbutton_adj;
     
-    GtkWidget *direction_alignment;
-    GtkWidget *direction_radio_button_vbox;
-    
     GtkWidget *options_frame;
     GtkWidget *options_vbox;
     GtkWidget *new_layer_button;
@@ -81,8 +78,6 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *radio_frame;
     GtkWidget *radio_frame_label;
     GtkWidget *radio_vbox;
-    GtkWidget *radio_entry;
-    
     
 	ui_vals->vals = vals;
 

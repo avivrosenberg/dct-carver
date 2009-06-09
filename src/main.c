@@ -3,7 +3,7 @@
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
 
-#include "dct.h"
+//#include "dct.h"
 #include "main.h"
 #include "interface.h"
 #include "render.h"
@@ -58,8 +58,6 @@ PlugInVals			vals;
 static 	PlugInImageVals		image_vals;
 static 	PlugInDrawableVals	drawable_vals;
 static 	PlugInUIVals		ui_vals;
-DCTAtomDB			dctAtomDB;
-
 
 GimpPlugInInfo PLUG_IN_INFO = {
     NULL,  /* init_proc  */
@@ -109,10 +107,8 @@ run(const gchar      *name,
     static GimpParam  values[1];
     GimpPDBStatusType status = GIMP_PDB_SUCCESS;
     GimpRunMode       run_mode;
-    //GimpDrawable     *drawable_orig;
     GimpDrawable     *drawable;
     gint32 			image_ID;
-    gint32			drawableID;
 
     /* Setting mandatory output values */
     *nreturn_vals = 1;
@@ -121,24 +117,15 @@ run(const gchar      *name,
     /* Getting run_mode - we won't display a dialog if
      * we are in NONINTERACTIVE mode */
     run_mode = param[0].data.d_int32;
-
     image_ID = param[1].data.d_image;
 
     /*  Get the specified drawable  */
-    //drawable_orig = gimp_drawable_get(param[2].data.d_drawable);
-    //drawableID = gimp_layer_new_from_drawable(param[2].data.d_drawable, image_ID);
-    //gimp_image_add_layer(image_ID, drawableID, -1);
-    //gimp_layer_flatten(param[2].data.d_drawable);
-    //gimp_layer_flatten(drawableID);
-    //drawable = gimp_drawable_get(drawableID);
     drawable = gimp_drawable_get(param[2].data.d_drawable);
     /*  Initialize with default values  */
     vals          = default_vals;
     image_vals    = default_image_vals;
     drawable_vals = default_drawable_vals;
     ui_vals       = default_ui_vals;
-
-    init_dctatomdb(&dctAtomDB, vals.blocksize);
 
     switch (run_mode) {
 
@@ -200,10 +187,7 @@ run(const gchar      *name,
     }
 
     values[0].type = GIMP_PDB_STATUS;
-
     values[0].data.d_status = status;
-
-    atomdb_free(dctAtomDB);
 
     return;
 }

@@ -41,7 +41,6 @@ extern	const	PlugInVals			default_vals;
 extern	const	PlugInImageVals		default_image_vals;
 extern	const	PlugInDrawableVals	default_drawable_vals;
 extern	const	PlugInUIVals		default_ui_vals;
-extern 			DCTAtomDB			dctAtomDB; /* Global database of dct atoms */
 extern 			PlugInVals			vals;
 
 #endif /* __MAIN_H__ */
