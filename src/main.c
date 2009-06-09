@@ -35,7 +35,7 @@ const PlugInVals default_vals = {
     FALSE,	//preview
     FALSE,	//new_layer
     TRUE,	//resize_canvas
-    TRUE,   //output_energy
+    TRUE,	//output_energy
     TRUE,	//vertically
     FALSE	//horizontally
 };
@@ -49,7 +49,9 @@ const PlugInDrawableVals default_drawable_vals = {
 };
 
 const PlugInUIVals default_ui_vals = {
-    TRUE
+    //TRUE,
+    NULL,
+    NULL
 };
 
 PlugInVals			vals;

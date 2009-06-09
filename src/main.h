@@ -15,7 +15,7 @@ typedef struct {
     gboolean	preview;
     gboolean	new_layer;
     gboolean	resize_canvas;
-    gboolean    output_energy;
+    gboolean	output_energy;
     gboolean	vertically;
     gboolean	horizontally;
 } PlugInVals;
@@ -29,7 +29,9 @@ typedef struct {
 } PlugInDrawableVals;
 
 typedef struct {
-    gboolean  chain_active;
+    //gboolean  chain_active;
+    PlugInVals *vals;
+    GimpPreview *preview;
 } PlugInUIVals;
 
 
