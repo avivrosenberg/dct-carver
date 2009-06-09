@@ -7,11 +7,6 @@
 #define DATA_KEY_VALS    	"plug_in_dct_carver"
 #define DATA_KEY_UI_VALS 	"plug_in_dct_carver_ui"
 
-typedef enum direction_type_t {
-	vertically = 0,
-	horizontally
-} direction_type;
-
 typedef struct {
     gfloat    edges;
     gfloat    textures;
@@ -23,7 +18,6 @@ typedef struct {
     gboolean	output_energy;
     gboolean	vertically;
     gboolean	horizontally;
-    direction_type	direction;
 } PlugInVals;
 
 typedef struct {

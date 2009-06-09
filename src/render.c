@@ -173,6 +173,36 @@ LqrRetVal write_carver_to_layer(LqrCarver * r, gint32 layer_ID) {
     return LQR_OK;
 }
 
+void write_energy_to_layer(LqrCarver * r, gint32 layer_ID) {
+    GimpDrawable * drawable;
+    gint y;
+    gint w, h;
+    gint bpp;
+    GimpPixelRgn rgn_out;
+    guchar *out_line;
+    gint update_step;
+
+    gimp_progress_init(("Outputting energy..."));
+    update_step = MAX((lqr_carver_get_height(r) - 1) / 20, 1);
+
+    drawable = gimp_drawable_get(layer_ID);
+
+    w = gimp_drawable_width(layer_ID);
+    h = gimp_drawable_height(layer_ID);
+
+    gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, TRUE);
+
+    
+
+    gimp_drawable_flush(drawable);
+
+    gimp_drawable_merge_shadow(layer_ID, TRUE);
+    gimp_drawable_update(layer_ID, 0, 0, w, h);
+    gimp_drawable_detach(drawable);
+    gimp_progress_end();
+    
+}
+
 gint clamp_offset_to_border(gint base, gint offset, gint lower_border, gint upper_border) {
     if (((base + offset) - lower_border) < 0) {
         return (offset - ((base + offset) - lower_border));
@@ -281,6 +311,7 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     GimpDrawable *drawable;
     GimpPixelRgn rgn_in;
     gint layer_ID = gimp_image_get_active_layer(image_ID);
+    gint32 energy_image_ID, energy_layer_ID = -1;
     guchar* rgb_buffer;
     gint delta_x = 1;
     gint rigidity = 0;
@@ -314,8 +345,14 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     gimp_drawable_offsets(layer_ID, &x_off, &y_off);
     rgb_buffer = rgb_buffer_from_layer(layer_ID);
 
-	if (vals->horizontally == TRUE) printf("\n horizontally1 \n");
-	if (vals->vertically == TRUE) printf("\n vertically1 \n");
+    if (vals->output_energy == TRUE) {
+        energy_image_ID = gimp_image_new(old_width, old_height, gimp_image_base_type(image_ID));
+        energy_layer_ID = gimp_layer_new_from_drawable(layer_ID, energy_image_ID);
+        gimp_image_add_layer(energy_image_ID, energy_layer_ID, -1);
+        gimp_drawable_set_name(energy_layer_ID, "Energy image");
+        gimp_drawable_set_visible(energy_layer_ID, FALSE);
+        dct_energy_preview(gimp_drawable_get(energy_layer_ID),NULL);
+    }
 
     if (vals->vertically) { //check resize direction
     	new_width = old_width;
@@ -332,17 +369,14 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     lqr_carver_set_progress(carver, progress);
     lqr_carver_set_resize_order (carver, res_order);
     lqr_carver_set_use_cache(carver, TRUE);
-    if (vals->horizontally == TRUE) printf("\n horizontally2 \n");
-	if (vals->vertically == TRUE) printf("\n vertically2 \n");
     lqr_carver_resize(carver, new_width, new_height);
-	if (vals->horizontally == TRUE) printf("\n horizontally3 \n");
-	if (vals->vertically == TRUE) printf("\n vertically3 \n");
+
 
     if (vals->resize_canvas == TRUE) {
-      gimp_image_resize (image_ID, new_width, new_height, -x_off, -y_off);
-      gimp_layer_resize_to_image_size (layer_ID);
+        gimp_image_resize (image_ID, new_width, new_height, -x_off, -y_off);
+        gimp_layer_resize_to_image_size (layer_ID);
     } else {
-      gimp_layer_resize (layer_ID, new_width, new_height, 0, 0);
+        gimp_layer_resize (layer_ID, new_width, new_height, 0, 0);
     }
 
     gint ntiles = new_width / gimp_tile_width() + 1;
@@ -352,6 +386,10 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
 
     gimp_drawable_set_visible (layer_ID, TRUE);
     gimp_image_set_active_layer (image_ID, layer_ID);
+    if (energy_layer_ID != -1) {
+        gimp_display_new(energy_image_ID);
+        gimp_drawable_set_visible(energy_layer_ID, TRUE);
+    }
 
     free_1d_int(params.ip);
     free_1d_double(params.w);
@@ -375,13 +413,21 @@ void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {
         atomdb_free(dctAtomDB);
         init_dctatomdb(&dctAtomDB, vals.blocksize);
     }
-    gimp_preview_get_position(preview, &x1, &y1);
-    gimp_preview_get_size(preview, &width, &height);
+    if (preview) {
+        gimp_preview_get_position(preview, &x1, &y1);
+        gimp_preview_get_size(preview, &width, &height);
+        x2 = x1 + width;
+		y2 = y1 + height;
+    } else {
+		gimp_drawable_mask_bounds(drawable->drawable_id, &x1, &y1, &x2, &y2);
+		width = x2 - x1;
+		height = y2 - y1;
+	}
     gimp_tile_cache_ntiles(2 * (drawable->width / gimp_tile_width() + 1));
     gimp_pixel_rgn_init(&rgn_in, drawable, x1, y1, width, height, FALSE, FALSE);
     gimp_pixel_rgn_init(&rgn_out, drawable, x1, y1, width, height, preview == NULL, TRUE);
 
-    blocksize = dctAtomDB.blocksize;
+    blocksize = vals.blocksize;
     channels = gimp_drawable_bpp(drawable->drawable_id);
     current_rows = g_new(guchar*, blocksize);
     tmp_row = g_new(guchar, width * channels);
@@ -417,7 +463,13 @@ void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {
     g_free(energy_image);
     g_free(output_image);
 
-    gimp_drawable_preview_draw_region(GIMP_DRAWABLE_PREVIEW(preview), &rgn_out);
+    if (preview) {
+		gimp_drawable_preview_draw_region(GIMP_DRAWABLE_PREVIEW(preview), &rgn_out);
+	} else {
+		gimp_drawable_flush(drawable);
+		gimp_drawable_merge_shadow(drawable->drawable_id, TRUE);
+		gimp_drawable_update(drawable->drawable_id, x1, y1, width, height);
+	}
     return;
 }
 
