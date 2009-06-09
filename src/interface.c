@@ -16,6 +16,7 @@
 /*  Local function prototypes  */
 
 void toggle(GtkToggleButton *toggle_button, gpointer data);
+void change_blocksize(GimpIntComboBox *box, gpointer data);
 
 /*  Local variables  */
 
@@ -70,6 +71,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *options_vbox;
     GtkWidget *new_layer_button;
     GtkWidget *resize_canvas_button;
+    GtkWidget *output_energy_button;
     GtkWidget *options_frame_label;
     
     
@@ -81,6 +83,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *radio_entry;
     
     
+	ui_vals->vals = vals;
 
     gimp_ui_init("dct-carver", FALSE);
 
@@ -107,6 +110,8 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gimp_preview_set_update(GIMP_PREVIEW(preview), vals->preview);
     gtk_box_pack_start(GTK_BOX(energy_hbox), preview, TRUE, TRUE, 0);
     gtk_widget_show(preview);
+    
+    ui_vals->preview = GIMP_PREVIEW(preview);
     
 	//preview - end
 
@@ -136,8 +141,10 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_widget_show(blocksize_label);
     gtk_label_set_justify(GTK_LABEL(blocksize_label), GTK_JUSTIFY_RIGHT);
 
-    blocksize_spinbutton = gimp_spin_button_new(&blocksize_spinbutton_adj, vals->blocksize, 2, 16, 1, 1, 0, 5, 0);
-    //blocksize_spinbutton = gimp_int_combo_box_new("2",2,"4",4,"8",8,"16",16,NULL);
+    //blocksize_spinbutton = gimp_spin_button_new(&blocksize_spinbutton_adj, vals->blocksize, 2, 16, 1, 1, 0, 5, 0);
+    blocksize_spinbutton = gimp_int_combo_box_new("2",2,"4",4,"8",8,"16",16,NULL);
+    gimp_int_combo_box_connect(GIMP_INT_COMBO_BOX(blocksize_spinbutton), vals->blocksize, G_CALLBACK(change_blocksize), ui_vals);
+    
     gtk_box_pack_start(GTK_BOX(blocksize_hbox), blocksize_spinbutton, FALSE, FALSE, 0);
     gtk_widget_show(blocksize_spinbutton);
 
@@ -315,6 +322,18 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 			   ("Resize and translate the image "
 			     "canvas to fit the resized layer"), NULL);
 	
+	output_energy_button =
+     gtk_check_button_new_with_label (("Output Energy"));
+
+   	gtk_box_pack_start (GTK_BOX (options_vbox), output_energy_button, FALSE, FALSE, 0);
+   	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (output_energy_button),
+				vals->output_energy);
+   	gtk_widget_show (output_energy_button);
+
+    gimp_help_set_help_data (output_energy_button,
+			   ("Output the energy that was computed "
+			     "onto a new layer layer"), NULL);
+	
 	options_frame_label = gtk_label_new("<b>Output options</b>");
     gtk_widget_show(options_frame_label);
     gtk_frame_set_label_widget(GTK_FRAME(options_frame), options_frame_label);
@@ -329,9 +348,9 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                              G_CALLBACK(dct_energy_preview),
                              drawable);
 
-    g_signal_connect_swapped(blocksize_spinbutton_adj, "value_changed",
-                             G_CALLBACK(gimp_preview_invalidate),
-                             preview);
+    //g_signal_connect_swapped(blocksize_spinbutton_adj, "value_changed",
+                             //G_CALLBACK(gimp_preview_invalidate),
+                             //preview);
 
     g_signal_connect_swapped(edges_adj, "value_changed",
                              G_CALLBACK(gimp_preview_invalidate),
@@ -341,9 +360,9 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                              G_CALLBACK(gimp_preview_invalidate),
                              preview);
                                                    
-    g_signal_connect(blocksize_spinbutton_adj, "value_changed",
-                     G_CALLBACK(gimp_int_adjustment_update),
-                     &(vals->blocksize));
+    //g_signal_connect(blocksize_spinbutton_adj, "value_changed",
+                     //G_CALLBACK(gimp_int_adjustment_update),
+                     //&(vals->blocksize));
 
     g_signal_connect(edges_adj, "value_changed",
                      G_CALLBACK(gimp_float_adjustment_update),
@@ -387,4 +406,12 @@ void
 toggle(GtkToggleButton *toggle_button, gpointer data) {
 	*((gboolean*)data) = gtk_toggle_button_get_active(toggle_button);
 }
+
+void
+change_blocksize(GimpIntComboBox *box, gpointer data) {
+	PlugInUIVals* ui_vals = (PlugInUIVals*)data;
+	gimp_int_combo_box_get_active(box, &((ui_vals->vals)->blocksize));
+	gimp_preview_invalidate(ui_vals->preview);
+}
+	
 
