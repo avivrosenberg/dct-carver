@@ -1,5 +1,7 @@
+#include <gtk/gtk.h>
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
+
 
 #include "dct.h"
 #include "main.h"
@@ -17,6 +19,7 @@
 
 void toggle(GtkToggleButton *toggle_button, gpointer data);
 void change_blocksize(GimpIntComboBox *box, gpointer data);
+void change_preference(GtkHScale *slider,gpointer data);
 
 /*  Local variables  */
 
@@ -49,11 +52,15 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *sliders_frame;
     GtkWidget *sliders_alignment;
     GtkWidget *sliders_frame_label;
-    GtkWidget *sliders_table;
-    GtkObject *edges_adj;
-    GtkObject *textures_adj;
+    //GtkWidget *sliders_table;
+    GtkWidget *sliders_hbox;
+    GtkWidget *slider_hscale;
+    GtkWidget *edges_label;
+    GtkWidget *textures_label;
+    //GtkObject *edges_adj;
+    //GtkObject *textures_adj;
     gboolean   run;
-    gint       row;
+    //gint       row;
     
     GtkWidget *resize_frame;
     GtkWidget *resize_vbox;
@@ -152,39 +159,64 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     // blocksize - end
 
 
-    /* Sliders Table:
+    /* Sliders:
      * */
     sliders_frame = gtk_frame_new(NULL);
     gtk_box_pack_start(GTK_BOX(energy_vbox), sliders_frame, TRUE, TRUE, 0);
     gtk_container_set_border_width(GTK_CONTAINER(sliders_frame), 6);
     gtk_widget_show(sliders_frame);
 
-	sliders_alignment = gtk_alignment_new(0, 0.5, 0, 0);
+	sliders_alignment = gtk_alignment_new(0.5, 0.5, 1, 0);
     gtk_widget_show(sliders_alignment);
     gtk_container_add(GTK_CONTAINER(sliders_frame), sliders_alignment);
     gtk_alignment_set_padding(GTK_ALIGNMENT(sliders_alignment), 6, 6, 6, 6);
 
-    sliders_table = gtk_table_new(2, 3, FALSE);
-    gtk_table_set_col_spacings(GTK_TABLE(sliders_table), 6);
-    gtk_table_set_row_spacings(GTK_TABLE(sliders_table), 2);
-    gtk_container_add(GTK_CONTAINER(sliders_alignment), sliders_table);
-    gtk_widget_show(sliders_table);
+	sliders_hbox = gtk_hbox_new(FALSE, 0);
+    gtk_widget_show(sliders_hbox);
+    gtk_container_add(GTK_CONTAINER(sliders_alignment), sliders_hbox);
+    
+    edges_label = gtk_label_new_with_mnemonic("Edges");
+    gtk_box_pack_start(GTK_BOX(sliders_hbox), edges_label, FALSE, FALSE, 1);
+    gtk_widget_show(edges_label);
+    gtk_label_set_justify(GTK_LABEL(edges_label), GTK_JUSTIFY_RIGHT);
+    
+    slider_hscale = gtk_hscale_new_with_range(0, 1, 0.01);
+    gtk_range_set_value(GTK_RANGE(slider_hscale), 0.5);
+    gtk_range_set_update_policy(GTK_RANGE(slider_hscale), GTK_UPDATE_CONTINUOUS);
+    //gtk_scale_add_mark(GTK_SCALE(slider_hscale), 0, GTK_POS_BOTTOM, "Textures" );
+    //gtk_scale_add_mark(GTK_SCALE(slider_hscale), 1, GTK_POS_BOTTOM, "Edges" );
+    //gtk_scale_add_mark(GTK_SCALE(slider_hscale), 0.5, GTK_POS_BOTTOM, "No preference" );
+    gtk_scale_set_draw_value(GTK_SCALE(slider_hscale), FALSE);
+    gtk_widget_show(slider_hscale);
+    gtk_box_pack_start(GTK_BOX(sliders_hbox), slider_hscale, TRUE, TRUE, 20);
+    
+    textures_label = gtk_label_new_with_mnemonic("Textures");
+    gtk_box_pack_start(GTK_BOX(sliders_hbox), textures_label, FALSE, FALSE, 1);
+    gtk_widget_show(textures_label);
+    gtk_label_set_justify(GTK_LABEL(textures_label), GTK_JUSTIFY_RIGHT);
+    
 
-    row = 0;
+    //sliders_table = gtk_table_new(2, 3, FALSE);
+    //gtk_table_set_col_spacings(GTK_TABLE(sliders_table), 6);
+    //gtk_table_set_row_spacings(GTK_TABLE(sliders_table), 2);
+    //gtk_container_add(GTK_CONTAINER(sliders_alignment), sliders_table);
+    //gtk_widget_show(sliders_table);
 
-    edges_adj = gimp_scale_entry_new(GTK_TABLE(sliders_table), 0, row++,
-                                     ("Edges:"), SCALE_WIDTH, SPIN_BUTTON_WIDTH,
-                                     vals->edges, 0.0, 1.0, 0.01, 0.1, 2,
-                                     TRUE, 0, 0,
-                                     ("Scale factor for DCT atoms coresponding to edges"), NULL);
+    //row = 0;
 
-    textures_adj = gimp_scale_entry_new(GTK_TABLE(sliders_table), 0, row++,
-                                        ("Textures:"), SCALE_WIDTH, SPIN_BUTTON_WIDTH,
-                                        vals->textures, 0.0, 1.0, 0.01, 0.1, 2,
-                                        TRUE, 0, 0,
-                                        ("Scale factor for DCT atoms coresponding to textures"), NULL);
+    //edges_adj = gimp_scale_entry_new(GTK_TABLE(sliders_table), 0, row++,
+                                     //("Edges:"), SCALE_WIDTH, SPIN_BUTTON_WIDTH,
+                                     //vals->edges, 0.0, 1.0, 0.01, 0.1, 2,
+                                     //TRUE, 0, 0,
+                                     //("Scale factor for DCT atoms coresponding to edges"), NULL);
 
-	sliders_frame_label = gtk_label_new("<b>Modify egde and texture preservation factors</b>");
+    //textures_adj = gimp_scale_entry_new(GTK_TABLE(sliders_table), 0, row++,
+                                        //("Textures:"), SCALE_WIDTH, SPIN_BUTTON_WIDTH,
+                                        //vals->textures, 0.0, 1.0, 0.01, 0.1, 2,
+                                        //TRUE, 0, 0,
+                                        //("Scale factor for DCT atoms coresponding to textures"), NULL);
+
+	sliders_frame_label = gtk_label_new("<b>Egde/texture preservation preference</b>");
     gtk_widget_show(sliders_frame_label);
     gtk_frame_set_label_widget(GTK_FRAME(sliders_frame), sliders_frame_label);
     gtk_label_set_use_markup(GTK_LABEL(sliders_frame_label), TRUE);
@@ -357,25 +389,29 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                              //G_CALLBACK(gimp_preview_invalidate),
                              //preview);
 
-    g_signal_connect_swapped(edges_adj, "value_changed",
-                             G_CALLBACK(gimp_preview_invalidate),
-                             preview);
+    //g_signal_connect_swapped(edges_adj, "value_changed",
+                             //G_CALLBACK(gimp_preview_invalidate),
+                             //preview);
 
-    g_signal_connect_swapped(textures_adj, "value_changed",
-                             G_CALLBACK(gimp_preview_invalidate),
-                             preview);
+    //g_signal_connect_swapped(textures_adj, "value_changed",
+                             //G_CALLBACK(gimp_preview_invalidate),
+                             //preview);
                                                    
     //g_signal_connect(blocksize_spinbutton_adj, "value_changed",
                      //G_CALLBACK(gimp_int_adjustment_update),
                      //&(vals->blocksize));
 
-    g_signal_connect(edges_adj, "value_changed",
-                     G_CALLBACK(gimp_float_adjustment_update),
-                     &(vals->edges));
+	g_signal_connect(slider_hscale, "value_changed",
+					 G_CALLBACK(change_preference),
+					 (gpointer)ui_vals);
 
-    g_signal_connect(textures_adj, "value_changed",
-                     G_CALLBACK(gimp_float_adjustment_update),
-                     &(vals->textures));
+    //g_signal_connect(edges_adj, "value_changed",
+                     //G_CALLBACK(gimp_float_adjustment_update),
+                     //&(vals->edges));
+
+    //g_signal_connect(textures_adj, "value_changed",
+                     //G_CALLBACK(gimp_float_adjustment_update),
+                     //&(vals->textures));
                      
     g_signal_connect(seams_number_spinbutton_adj, "value_changed",
                      G_CALLBACK(gimp_int_adjustment_update),
@@ -419,6 +455,16 @@ void
 change_blocksize(GimpIntComboBox *box, gpointer data) {
 	PlugInUIVals* ui_vals = (PlugInUIVals*)data;
 	gimp_int_combo_box_get_active(box, &((ui_vals->vals)->blocksize));
+	gimp_preview_invalidate(ui_vals->preview);
+}
+
+void 
+change_preference(GtkHScale *slider, gpointer data){
+	PlugInUIVals* ui_vals = (PlugInUIVals*)data;
+	gdouble slider_val = gtk_range_get_value(GTK_RANGE(slider));
+	
+	(ui_vals->vals)->textures = slider_val;
+	(ui_vals->vals)->edges = 1 - slider_val;
 	gimp_preview_invalidate(ui_vals->preview);
 }
 	
