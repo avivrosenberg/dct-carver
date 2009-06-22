@@ -1,3 +1,4 @@
+
 #ifndef __RENDER_H__
 #define __RENDER_H__
 
@@ -23,7 +24,5 @@ render(gint32 layer_ID, PlugInVals *vals, PlugInImageVals *image_vals, PlugInDra
 
 void
 dct_energy_preview(GimpDrawable *drawable, GimpPreview *preview);
-
-
 
 #endif /* __RENDER_H__ */

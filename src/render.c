@@ -200,6 +200,27 @@ guchar* rgb_buffer_from_layer(gint layer_ID) {
 
 }
 
+void display_carver_energy(GimpDrawable *drawable, gint w, gint h, gint channels, LqrCarver *carver) {
+
+    guchar *output_image; 
+    //gfloat *energy_buffer;
+    GimpPixelRgn rgn_out;
+
+    gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, TRUE);
+    //energy_buffer = g_new(gfloat, w * h);
+    output_image = g_new(guchar, w * h * channels);
+
+    //lqr_carver_get_energy(carver, energy_buffer, 0); //0 = horizontal orientation; should not matter
+    //normalize_image(energy_buffer, output_image, h, w, channels);
+    lqr_carver_get_energy_image(carver, output_image, 0, lqr_carver_get_col_depth(carver) ,lqr_carver_get_image_type(carver));
+    gimp_pixel_rgn_set_rect(&rgn_out, output_image, 0, 0, w, h); 
+
+    gimp_drawable_flush(drawable);
+    gimp_drawable_merge_shadow(drawable->drawable_id, TRUE);
+    gimp_drawable_update(drawable->drawable_id, 0, 0, w, h);
+
+}
+
 /*  Public functions  */
 
 void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, PlugInDrawableVals *drawable_vals) {
@@ -242,17 +263,6 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     gimp_drawable_offsets(layer_ID, &x_off, &y_off);
     rgb_buffer = rgb_buffer_from_layer(layer_ID);
 
-    if (vals->output_energy == TRUE) {
-        energy_image_ID = gimp_image_new(old_width, old_height, gimp_image_base_type(image_ID));
-        energy_layer_ID = gimp_layer_new_from_drawable(layer_ID, energy_image_ID);
-        gimp_image_add_layer(energy_image_ID, energy_layer_ID, -1);
-        g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "Energy Image (b=%d, e=%.2f, t=%.2f)",
-                   vals->blocksize, vals->edges, vals->textures);
-        gimp_drawable_set_name(energy_layer_ID, new_layer_name);
-        gimp_image_set_filename(energy_image_ID, new_layer_name);
-        dct_energy_preview(gimp_drawable_get(energy_layer_ID),NULL);
-    }
-
     if (vals->vertically) { //check resize direction
     	new_width = old_width;
         new_height = old_height + seams_number;
@@ -265,6 +275,19 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     carver = lqr_carver_new(rgb_buffer, old_width, old_height, bpp);
     lqr_carver_init(carver, delta_x, rigidity);
     lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_LUMA, (void*) &params);
+
+    if (vals->output_energy == TRUE) {
+        energy_image_ID = gimp_image_new(old_width, old_height, gimp_image_base_type(image_ID));
+        energy_layer_ID = gimp_layer_new_from_drawable(layer_ID, energy_image_ID);
+        gimp_image_add_layer(energy_image_ID, energy_layer_ID, -1);
+        g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "Energy Image (b=%d, e=%.2f, t=%.2f)",
+                   vals->blocksize, vals->edges, vals->textures);
+        gimp_drawable_set_name(energy_layer_ID, new_layer_name);
+        gimp_image_set_filename(energy_image_ID, new_layer_name);
+        //dct_energy_preview(gimp_drawable_get(energy_layer_ID),NULL);
+        display_carver_energy(gimp_drawable_get(energy_layer_ID), old_width, old_height, bpp, carver);
+    }
+
     lqr_carver_set_progress(carver, progress);
     lqr_carver_set_resize_order (carver, res_order);
     lqr_carver_set_use_cache(carver, TRUE);
