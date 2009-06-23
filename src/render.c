@@ -203,16 +203,12 @@ guchar* rgb_buffer_from_layer(gint layer_ID) {
 void display_carver_energy(GimpDrawable *drawable, gint w, gint h, gint channels, LqrCarver *carver) {
 
     guchar *output_image; 
-    //gfloat *energy_buffer;
     GimpPixelRgn rgn_out;
 
     gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, TRUE);
-    //energy_buffer = g_new(gfloat, w * h);
     output_image = g_new(guchar, w * h * channels);
 
-    //lqr_carver_get_energy(carver, energy_buffer, 0); //0 = horizontal orientation; should not matter
-    //normalize_image(energy_buffer, output_image, h, w, channels);
-    lqr_carver_get_energy_image(carver, output_image, 0, lqr_carver_get_col_depth(carver) ,lqr_carver_get_image_type(carver));
+    lqr_carver_get_energy_image(carver, output_image, 0, lqr_carver_get_col_depth(carver) ,lqr_carver_get_image_type(carver)); //0 = horizontal orientation; should not matter
     gimp_pixel_rgn_set_rect(&rgn_out, output_image, 0, 0, w, h); 
 
     gimp_drawable_flush(drawable);

@@ -181,7 +181,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_label_set_justify(GTK_LABEL(edges_label), GTK_JUSTIFY_RIGHT);
     
     slider_hscale = gtk_hscale_new_with_range(0, 1, 0.01);
-    gtk_range_set_value(GTK_RANGE(slider_hscale), 0.5);
+    gtk_range_set_value(GTK_RANGE(slider_hscale), vals->textures);
     gtk_range_set_update_policy(GTK_RANGE(slider_hscale), GTK_UPDATE_CONTINUOUS);
     //gtk_scale_add_mark(GTK_SCALE(slider_hscale), 0, GTK_POS_BOTTOM, "Textures" );
     //gtk_scale_add_mark(GTK_SCALE(slider_hscale), 1, GTK_POS_BOTTOM, "Edges" );
