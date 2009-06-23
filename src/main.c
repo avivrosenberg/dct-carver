@@ -37,7 +37,8 @@ const PlugInVals default_vals = {
     TRUE,	//resize_canvas
     TRUE,	//output_energy
     TRUE,	//vertically
-    FALSE	//horizontally
+    FALSE,	//horizontally
+    TRUE    //output_seams
 };
 
 const PlugInImageVals default_image_vals = {

@@ -18,6 +18,7 @@ typedef struct {
     gboolean	output_energy;
     gboolean	vertically;
     gboolean	horizontally;
+    gboolean    output_seams;
 } PlugInVals;
 
 typedef struct {

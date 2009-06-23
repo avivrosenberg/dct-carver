@@ -219,6 +219,38 @@ void display_carver_energy(GimpDrawable *drawable, gint w, gint h, gint channels
     gimp_drawable_merge_shadow(drawable->drawable_id, TRUE);
     gimp_drawable_update(drawable->drawable_id, 0, 0, w, h);
 
+    g_free(output_image);
+}
+
+void display_carver_seams(GimpDrawable *drawable, LqrCarver *carver) {
+
+    LqrVMap *vmap;
+    LqrVMapList *list;
+    gint* buffer;
+    gint w, h, depth, vis, x, y;
+    GimpPixelRgn rgn_out;
+    guchar pixel_value[] = {0, 255, 0};
+
+    list = lqr_vmap_list_start(carver);
+    vmap = lqr_vmap_list_current(list); //Should only be one vmap in the list
+    buffer = lqr_vmap_get_data(vmap);
+    w = lqr_vmap_get_width(vmap);
+    h = lqr_vmap_get_height(vmap);
+    depth = lqr_vmap_get_depth(vmap);
+    gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, TRUE);
+    
+    for(x = 0; x < w-1; x++) {
+        for(y = 0; y < h-1; y++) {
+            vis = buffer[y * w + x];
+            if (vis == 0) continue;
+            pixel_value[1] = (guchar)(255.0 * ((gdouble)vis)/((gdouble)depth));
+            gimp_pixel_rgn_set_pixel(&rgn_out, pixel_value, x, y); 
+        }
+    }
+
+    gimp_drawable_flush(drawable);
+    gimp_drawable_merge_shadow(drawable->drawable_id, TRUE);
+    gimp_drawable_update(drawable->drawable_id, 0, 0, w, h);
 }
 
 /*  Public functions  */
@@ -235,6 +267,7 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     gint seams_number = vals->seams_number;
     gint layer_ID = gimp_image_get_active_layer(image_ID);
     gint32 energy_image_ID, energy_layer_ID = -1;
+    gint32 seams_image_ID, seams_layer_ID = -1;
     guchar* rgb_buffer;
     gint delta_x = 1;
     gint rigidity = 0;
@@ -284,15 +317,24 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
                    vals->blocksize, vals->edges, vals->textures);
         gimp_drawable_set_name(energy_layer_ID, new_layer_name);
         gimp_image_set_filename(energy_image_ID, new_layer_name);
-        //dct_energy_preview(gimp_drawable_get(energy_layer_ID),NULL);
         display_carver_energy(gimp_drawable_get(energy_layer_ID), old_width, old_height, bpp, carver);
     }
+
+    if (vals->output_seams == TRUE) {
+        lqr_carver_set_dump_vmaps(carver);
+        seams_image_ID = gimp_image_new(old_width, old_height, GIMP_RGB);
+        seams_layer_ID = gimp_layer_new_from_drawable(layer_ID, seams_image_ID);
+        gimp_image_add_layer(seams_image_ID, seams_layer_ID, -1);
+        g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "Seams Image (b=%d, e=%.2f, t=%.2f)",
+                   vals->blocksize, vals->edges, vals->textures);
+        gimp_drawable_set_name(seams_layer_ID, new_layer_name);
+        gimp_image_set_filename(seams_image_ID, new_layer_name);
+    } 
 
     lqr_carver_set_progress(carver, progress);
     lqr_carver_set_resize_order (carver, res_order);
     lqr_carver_set_use_cache(carver, TRUE);
     lqr_carver_resize(carver, new_width, new_height);
-
 
     if (vals->resize_canvas == TRUE) {
         gimp_image_resize (image_ID, new_width, new_height, -x_off, -y_off);
@@ -300,6 +342,10 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     } else {
         gimp_layer_resize (layer_ID, new_width, new_height, 0, 0);
     }
+
+    if (vals->output_seams == TRUE) {
+        display_carver_seams(gimp_drawable_get(seams_layer_ID), carver);
+    } 
 
     gint ntiles = new_width / gimp_tile_width() + 1;
     gimp_tile_cache_size((gimp_tile_width() * gimp_tile_height() * ntiles * 4 * 2) / 1024 + 1);
@@ -311,6 +357,10 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     if (energy_layer_ID != -1) {
         gimp_display_new(energy_image_ID);
         gimp_drawable_set_visible(energy_layer_ID, TRUE);
+    }
+    if (seams_layer_ID != -1) {
+        gimp_display_new(seams_image_ID);
+        gimp_drawable_set_visible(seams_layer_ID, TRUE);
     }
 
     free_1d_int(params.ip);
