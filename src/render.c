@@ -173,8 +173,8 @@ gfloat dct_pixel_energy(gint x, gint y, gint w, gint h, LqrReadingWindow *rw, gp
 
     for (i = -radius + 1; i <= radius; i++) {
         for (j = -radius + 1; j <= radius; j++) {
-            ii = clamp_offset_to_border(x, i, 0, h - 1);
-            jj = clamp_offset_to_border(y, j, 0, w - 1);
+            ii = clamp_offset_to_border(x, i, 0, w - 1);
+            jj = clamp_offset_to_border(y, j, 0, h - 1);
             data[i+radius-1][j+radius-1] = lqr_rwindow_read(rw, ii, jj, 0);
         }
     }
