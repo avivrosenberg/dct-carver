@@ -13,6 +13,18 @@
 
 /* 	Private functions */
 
+void new_image_from_layer_with_filename(gint* new_image_ID, gint* new_layer_ID, gint layer_ID, gchar* filename) {
+    gint width = gimp_drawable_width(layer_ID);
+    gint height = gimp_drawable_height(layer_ID);
+
+    *new_image_ID = gimp_image_new(width, height, GIMP_RGB);
+    *new_layer_ID = gimp_layer_new_from_drawable(layer_ID, *new_image_ID);
+    gimp_image_add_layer(*new_image_ID, *new_layer_ID, -1);
+    gimp_drawable_set_name(*new_layer_ID, filename);
+    gimp_image_set_filename(*new_image_ID, filename);
+    return;
+}
+
 static void
 dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_number, gint width) {
     gint j;
@@ -93,9 +105,6 @@ normalize_image(gdouble* energy_image, guchar* output_image, gint height, gint w
     return;
 }
 
-
-/*
- * */
 
 LqrProgress* progress_init() {
     LqrProgress * progress = lqr_progress_new();
@@ -206,7 +215,7 @@ void display_carver_energy(GimpDrawable *drawable, gint w, gint h, gint channels
     //gfloat *energy_buffer;
     GimpPixelRgn rgn_out;
 
-    gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, TRUE);
+    gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, FALSE);
     //energy_buffer = g_new(gfloat, w * h);
     output_image = g_new(guchar, w * h * channels);
 
@@ -215,9 +224,10 @@ void display_carver_energy(GimpDrawable *drawable, gint w, gint h, gint channels
     lqr_carver_get_energy_image(carver, output_image, 0, lqr_carver_get_col_depth(carver) ,lqr_carver_get_image_type(carver));
     gimp_pixel_rgn_set_rect(&rgn_out, output_image, 0, 0, w, h); 
 
-    gimp_drawable_flush(drawable);
-    gimp_drawable_merge_shadow(drawable->drawable_id, TRUE);
+    //gimp_drawable_flush(drawable);
+    //gimp_drawable_merge_shadow(drawable->drawable_id, TRUE);
     gimp_drawable_update(drawable->drawable_id, 0, 0, w, h);
+    gimp_drawable_detach(drawable);
 
     g_free(output_image);
 }
@@ -228,7 +238,7 @@ void display_carver_seams(GimpDrawable *drawable, LqrCarver *carver) {
     LqrVMapList *list;
     gint* buffer;
     gint w, h, depth, vis, x, y;
-    GimpPixelRgn rgn_out;
+    GimpPixelRgn rgn;
     guchar pixel_value[] = {0, 255, 0};
 
     list = lqr_vmap_list_start(carver);
@@ -237,20 +247,22 @@ void display_carver_seams(GimpDrawable *drawable, LqrCarver *carver) {
     w = lqr_vmap_get_width(vmap);
     h = lqr_vmap_get_height(vmap);
     depth = lqr_vmap_get_depth(vmap);
-    gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, TRUE);
+    gimp_pixel_rgn_init(&rgn, drawable, 0, 0, w, h, TRUE, FALSE);
     
     for(x = 0; x < w-1; x++) {
         for(y = 0; y < h-1; y++) {
             vis = buffer[y * w + x];
-            if (vis == 0) continue;
-            pixel_value[1] = (guchar)(255.0 * ((gdouble)vis)/((gdouble)depth));
-            gimp_pixel_rgn_set_pixel(&rgn_out, pixel_value, x, y); 
+            if (vis == 0) {
+                continue;
+            } else {
+                pixel_value[1] = (guchar)(255.0 * ((gdouble)vis)/((gdouble)depth));
+                gimp_pixel_rgn_set_pixel(&rgn, pixel_value, x, y); 
+            }
         }
     }
 
-    gimp_drawable_flush(drawable);
-    gimp_drawable_merge_shadow(drawable->drawable_id, TRUE);
     gimp_drawable_update(drawable->drawable_id, 0, 0, w, h);
+    gimp_drawable_detach(drawable);
 }
 
 /*  Public functions  */
@@ -310,25 +322,17 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_LUMA, (void*) &params);
 
     if (vals->output_energy == TRUE) {
-        energy_image_ID = gimp_image_new(old_width, old_height, gimp_image_base_type(image_ID));
-        energy_layer_ID = gimp_layer_new_from_drawable(layer_ID, energy_image_ID);
-        gimp_image_add_layer(energy_image_ID, energy_layer_ID, -1);
-        g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "Energy Image (b=%d, e=%.2f, t=%.2f)",
+        g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "Energy (b=%d, e=%.2f, t=%.2f)",
                    vals->blocksize, vals->edges, vals->textures);
-        gimp_drawable_set_name(energy_layer_ID, new_layer_name);
-        gimp_image_set_filename(energy_image_ID, new_layer_name);
+        new_image_from_layer_with_filename(&energy_image_ID, &energy_layer_ID, layer_ID, new_layer_name);
         display_carver_energy(gimp_drawable_get(energy_layer_ID), old_width, old_height, bpp, carver);
     }
 
     if (vals->output_seams == TRUE) {
         lqr_carver_set_dump_vmaps(carver);
-        seams_image_ID = gimp_image_new(old_width, old_height, GIMP_RGB);
-        seams_layer_ID = gimp_layer_new_from_drawable(layer_ID, seams_image_ID);
-        gimp_image_add_layer(seams_image_ID, seams_layer_ID, -1);
-        g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "Seams Image (b=%d, e=%.2f, t=%.2f)",
+        g_snprintf(new_layer_name, LQR_MAX_NAME_LENGTH, "Seams (b=%d, e=%.2f, t=%.2f)",
                    vals->blocksize, vals->edges, vals->textures);
-        gimp_drawable_set_name(seams_layer_ID, new_layer_name);
-        gimp_image_set_filename(seams_image_ID, new_layer_name);
+        new_image_from_layer_with_filename(&seams_image_ID, &seams_layer_ID, layer_ID, new_layer_name);
     } 
 
     lqr_carver_set_progress(carver, progress);
@@ -356,11 +360,9 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     gimp_image_set_active_layer (image_ID, layer_ID);
     if (energy_layer_ID != -1) {
         gimp_display_new(energy_image_ID);
-        gimp_drawable_set_visible(energy_layer_ID, TRUE);
     }
     if (seams_layer_ID != -1) {
         gimp_display_new(seams_image_ID);
-        gimp_drawable_set_visible(seams_layer_ID, TRUE);
     }
 
     free_1d_int(params.ip);
