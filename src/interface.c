@@ -383,7 +383,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 
     gimp_help_set_help_data (output_seams_button,
 			   ("Output the seams that was computed "
-			     "onto the energy image"), NULL);
+			     "onto the original image"), NULL);
 	
 	options_frame_label = gtk_label_new("<b>Output options</b>");
     gtk_widget_show(options_frame_label);
