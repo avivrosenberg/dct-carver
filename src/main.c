@@ -110,6 +110,8 @@ run(const gchar      *name,
     GimpRunMode       run_mode;
     GimpDrawable     *drawable;
     gint32 			image_ID;
+    gboolean        run_dialog = TRUE, run_render = TRUE;
+    gint            dialog_resp, dialog_I_resp;
 
     /* Setting mandatory output values */
     *nreturn_vals = 1;
@@ -149,11 +151,35 @@ run(const gchar      *name,
             gimp_get_data(DATA_KEY_UI_VALS, &ui_vals);
 
             /* Display the dialog */
-
-            if (! gui_dialog(image_ID, drawable, &vals, &image_vals, &drawable_vals, &ui_vals)) {
-                status = GIMP_PDB_CANCEL;
+            while (run_dialog) {
+                dialog_resp = gui_dialog(image_ID, drawable, &vals,
+                                        &image_vals, &drawable_vals, &ui_vals);
+                switch(dialog_resp) {
+                    case GTK_RESPONSE_OK:
+                        run_dialog = FALSE;
+                        break;
+                    case DC_INTERACTIVE:
+                        dialog_I_resp = gui_interactive_dialog();
+                        switch(dialog_I_resp) {
+                            case GTK_RESPONSE_OK:
+                                run_dialog = FALSE;
+                                run_render = FALSE;
+                                break;
+                            case DC_BACK_TO_MAIN:
+                                run_dialog = TRUE;
+                                break;
+                            default:
+                                run_dialog = FALSE;
+                                run_render = FALSE;
+                                status = GIMP_PDB_CANCEL;
+                                break;
+                        }
+                        break;
+                    default:
+                        run_dialog = FALSE;
+                        status = GIMP_PDB_CANCEL;
+                }
             }
-
             break;
 
         case GIMP_RUN_WITH_LAST_VALS:
@@ -166,7 +192,9 @@ run(const gchar      *name,
     }
 
     if (status == GIMP_PDB_SUCCESS) {
-        render(image_ID, &vals, &image_vals, &drawable_vals);
+        if (run_render == TRUE) {
+            render(image_ID, &vals, &image_vals, &drawable_vals);
+        }
 
         if (run_mode != GIMP_RUN_NONINTERACTIVE)
             gimp_displays_flush();
@@ -174,10 +202,9 @@ run(const gchar      *name,
         if (run_mode == GIMP_RUN_INTERACTIVE) {
             gimp_set_data(DATA_KEY_VALS,    &vals,    sizeof(vals));
             gimp_set_data(DATA_KEY_UI_VALS, &ui_vals, sizeof(ui_vals));
+
+            gimp_drawable_detach(drawable);
         }
-
-        gimp_drawable_detach(drawable);
-
         //gimp_drawable_detach(drawable_orig);
     }
 

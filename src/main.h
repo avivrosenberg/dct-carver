@@ -35,6 +35,7 @@ typedef struct {
     GimpPreview *preview;
 } PlugInUIVals;
 
+typedef enum {DC_INTERACTIVE = 1, DC_BACK_TO_MAIN = 2} dc_dialog_response;
 
 /*  Default values  */
 

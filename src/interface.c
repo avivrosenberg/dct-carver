@@ -29,7 +29,26 @@ void update_preview_checkbox(GimpPreview *gimppreview, gpointer data);
 
 /*  Public functions  */
 
-gboolean
+gint
+gui_interactive_dialog() {
+    GtkWidget *dialog;
+    gint response_id;
+ 
+    dialog = gimp_dialog_new("DCT Carver Interactive", "dct-carver",
+                             NULL, 0,
+                             gimp_standard_help_func, PLUGIN_NAME,
+                             GTK_STOCK_GO_BACK, DC_BACK_TO_MAIN,
+                             GTK_STOCK_OK,     GTK_RESPONSE_OK,
+                             NULL);
+
+    gtk_widget_show(dialog);
+    response_id = gimp_dialog_run(GIMP_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+
+    return response_id;
+}
+
+gint
 gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImageVals *image_vals, 
            PlugInDrawableVals *drawable_vals, PlugInUIVals *ui_vals) {
 
@@ -60,7 +79,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *textures_label;
     //GtkObject *edges_adj;
     //GtkObject *textures_adj;
-    gboolean   run;
+    gint response_id;
     //gint       row;
     
     GtkWidget *resize_frame;
@@ -98,6 +117,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                              gimp_standard_help_func, PLUGIN_NAME,
                              GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
                              GTK_STOCK_OK,     GTK_RESPONSE_OK,
+                             "_Interactive", DC_INTERACTIVE,
                              NULL);
 
     main_vbox = gtk_vbox_new(FALSE, 6);
@@ -454,11 +474,11 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 
     gtk_widget_show(dialog);
 
-    run = (gimp_dialog_run(GIMP_DIALOG(dialog)) == GTK_RESPONSE_OK);
+    response_id = gimp_dialog_run(GIMP_DIALOG(dialog));
 
     gtk_widget_destroy(dialog);
 
-    return run;
+    return response_id;
 }
 
 void

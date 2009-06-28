@@ -5,9 +5,12 @@
 
 /*  Public functions  */
 
-gboolean
+gint
 gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImageVals *image_vals, 
            PlugInDrawableVals *drawable_vals, PlugInUIVals *ui_vals);
+
+gint
+gui_interactive_dialog();
 
 void error(const gchar* message);
 
