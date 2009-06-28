@@ -1,6 +1,7 @@
 #include <gtk/gtk.h>
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
+#include <lqr.h>
 
 
 #include "dct.h"
@@ -31,11 +32,25 @@ void callback_resize_slider(GtkHScale *slider, gpointer data);
 /*  Public functions  */
 
 gint
-gui_interactive_dialog(gint layer_ID, PlugInVals *vals) {
-    GtkWidget *dialog;
+gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
     gint response_id;
+
+    GtkWidget *dialog;
+    GtkWidget *main_vbox;
+    GtkWidget *slider_frame;
+    GtkWidget *slider_alignment;
+    GtkWidget *slider_hbox;
+    GtkWidget *min_label;
+    GtkWidget *slider_hscale;
+    GtkWidget *max_label;
+    GtkWidget *slider_frame_label;
+    gchar min_label_str[LQR_MAX_NAME_LENGTH];
+    gchar max_label_str[LQR_MAX_NAME_LENGTH];
+
+    gint old_width, old_height;
     LqrCarver *carver;
     PlugInUIIVals ui_i_vals;
+    EnergyParameters energy_params;
  
     dialog = gimp_dialog_new("DCT Carver Interactive", "dct-carver",
                              NULL, 0,
@@ -43,18 +58,71 @@ gui_interactive_dialog(gint layer_ID, PlugInVals *vals) {
                              GTK_STOCK_GO_BACK, DC_BACK_TO_MAIN,
                              GTK_STOCK_OK,     GTK_RESPONSE_OK,
                              NULL);
+                             
+    main_vbox = gtk_vbox_new(FALSE, 6);
+    gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), main_vbox);
+    gtk_widget_show(main_vbox);
+    
+    slider_frame = gtk_frame_new(NULL);
+    gtk_box_pack_start(GTK_BOX(main_vbox), slider_frame, TRUE, TRUE, 0);
+    gtk_container_set_border_width(GTK_CONTAINER(slider_frame), 6);
+    gtk_widget_show(slider_frame);
 
-    carver = init_carver_from_vals(layer_ID, vals);
+	slider_alignment = gtk_alignment_new(0.5, 0.5, 1, 0);
+	gtk_alignment_set_padding(GTK_ALIGNMENT(slider_alignment), 6, 6, 6, 6);
+    gtk_widget_show(slider_alignment);
+    gtk_container_add(GTK_CONTAINER(slider_frame), slider_alignment);
+    
+	slider_hbox = gtk_hbox_new(FALSE, 0);
+    gtk_widget_show(slider_hbox);
+    gtk_container_add(GTK_CONTAINER(slider_alignment), slider_hbox);
+    
+    g_snprintf(min_label_str, LQR_MAX_NAME_LENGTH, "%d seams",-1*vals->seams_number);
+    min_label = gtk_label_new_with_mnemonic(min_label_str);
+   // gtk_box_pack_start(GTK_BOX(slider_hbox), min_label, FALSE, FALSE, 1);
+    gtk_widget_show(min_label);
+    gtk_label_set_justify(GTK_LABEL(min_label), GTK_JUSTIFY_RIGHT);
+    
+    slider_hscale = gtk_hscale_new_with_range(-1*vals->seams_number, vals->seams_number, 1);
+    gtk_range_set_value(GTK_RANGE(slider_hscale), 0);
+    gtk_range_set_update_policy(GTK_RANGE(slider_hscale), GTK_UPDATE_CONTINUOUS);
+   	gtk_scale_set_draw_value(GTK_SCALE(slider_hscale), TRUE);
+   	gtk_range_set_show_fill_level(GTK_RANGE(slider_hscale), TRUE);
+   	gtk_range_set_fill_level(GTK_RANGE(slider_hscale), vals->seams_number);
+    gtk_widget_show(slider_hscale);
+    gtk_box_pack_start(GTK_BOX(slider_hbox), slider_hscale, TRUE, TRUE, 5);
+    
+    g_snprintf(max_label_str, LQR_MAX_NAME_LENGTH, "%d seams",vals->seams_number);
+    max_label = gtk_label_new_with_mnemonic(max_label_str);
+    //gtk_box_pack_start(GTK_BOX(slider_hbox), max_label, FALSE, FALSE, 1);
+    gtk_widget_show(max_label);
+    gtk_label_set_justify(GTK_LABEL(max_label), GTK_JUSTIFY_RIGHT);
+    
+	slider_frame_label = gtk_label_new("<b>Resize</b>");
+    gtk_widget_show(slider_frame_label);
+    gtk_frame_set_label_widget(GTK_FRAME(slider_frame), slider_frame_label);
+    gtk_label_set_use_markup(GTK_LABEL(slider_frame_label), TRUE);
+
+    old_width = gimp_drawable_width(layer_ID);
+    old_height = gimp_drawable_height(layer_ID);
+    carver = init_carver_from_vals(layer_ID, vals, &energy_params);
     ui_i_vals.vals = vals;
     ui_i_vals.carver = carver;
-    ui_i_vals.old_width = gimp_drawable_width(layer_ID);
-    ui_i_vals.old_height = gimp_drawable_height(layer_ID);
+    ui_i_vals.old_width = old_width;
+    ui_i_vals.old_height = old_height;
+    gimp_drawable_offsets(layer_ID, &(ui_i_vals.x_off), &(ui_i_vals.y_off));
+    ui_i_vals.image_ID = image_ID;
+    ui_i_vals.layer_ID = layer_ID;
 
     if(vals->vertically) {
         lqr_carver_resize(carver, old_width, old_height + vals->seams_number);
     } else {
         lqr_carver_resize(carver, old_width + vals->seams_number, old_height);
     }
+
+	g_signal_connect(slider_hscale, "value_changed",
+					 G_CALLBACK(callback_resize_slider),
+					 (gpointer)(&ui_i_vals));
 
     gtk_widget_show(dialog);
     response_id = gimp_dialog_run(GIMP_DIALOG(dialog));
@@ -530,7 +598,8 @@ callback_change_preference(GimpPreview *gimppreview, gpointer data) {
 	vals->preview = gimp_preview_get_update(gimppreview);
 }
 	
-void callback_resize_slider(GtkHScale *slider, gpointer data) {
+void
+callback_resize_slider(GtkHScale *slider, gpointer data) {
     PlugInUIIVals* ui_i_vals = (PlugInUIIVals*) data;
 	gdouble slider_val = gtk_range_get_value(GTK_RANGE(slider));
     gint new_width, new_height;
@@ -544,11 +613,12 @@ void callback_resize_slider(GtkHScale *slider, gpointer data) {
         new_height = ui_i_vals->old_height;
     }
 
-    lqr_carver_resize(carver, new_width, new_height);
-    gimp_layer_resize(ui_i_vals->layer_ID, new_width, new_height, 0, 0);
+    lqr_carver_resize(ui_i_vals->carver, new_width, new_height);
+    gimp_image_resize(ui_i_vals->image_ID, new_width, new_height, -ui_i_vals->x_off, -ui_i_vals->y_off);
+    gimp_layer_resize_to_image_size(ui_i_vals->layer_ID);
 
     ntiles = new_width / gimp_tile_width() + 1;
     gimp_tile_cache_size((gimp_tile_width() * gimp_tile_height() * ntiles * 4 * 2) / 1024 + 1);
-    write_carver_to_layer(carver, ui_i_vals->layer_ID);
+    write_carver_to_layer(ui_i_vals->carver, ui_i_vals->layer_ID);
 
 }

@@ -1,6 +1,8 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+#include <lqr.h>
+
 /*  Constants  */
 
 #define PLUGIN_NAME			"plug-in-dct-carver"
@@ -38,6 +40,9 @@ typedef struct {
     PlugInVals *vals;
     gint old_width;
     gint old_height;
+    gint x_off;
+    gint y_off;
+    gint image_ID;
     gint layer_ID;
     LqrCarver* carver;
 } PlugInUIIVals;

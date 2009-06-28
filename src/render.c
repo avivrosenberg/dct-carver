@@ -116,46 +116,6 @@ LqrProgress* progress_init() {
     return progress;
 }
 
-
-LqrRetVal write_carver_to_layer(LqrCarver * r, gint32 layer_ID) {
-    GimpDrawable * drawable;
-    gint y;
-    gint w, h;
-    GimpPixelRgn rgn_out;
-    guchar *out_line;
-    gint update_step;
-
-    gimp_progress_init(("Applying changes..."));
-    update_step = MAX((lqr_carver_get_height(r) - 1) / 20, 1);
-
-    drawable = gimp_drawable_get(layer_ID);
-
-    w = gimp_drawable_width(layer_ID);
-    h = gimp_drawable_height(layer_ID);
-
-    gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, TRUE);
-
-    while (lqr_carver_scan_line(r, &y, &out_line)) {
-        if (lqr_carver_scan_by_row(r)) {
-            gimp_pixel_rgn_set_row(&rgn_out, out_line, 0, y, w);
-        } else {
-            gimp_pixel_rgn_set_col(&rgn_out, out_line, y, 0, h);
-        }
-
-        if (y % update_step == 0) {
-            gimp_progress_update((gdouble) y / (lqr_carver_get_height(r) - 1));
-        }
-    }
-
-    gimp_drawable_flush(drawable);
-
-    gimp_drawable_merge_shadow(layer_ID, TRUE);
-    gimp_drawable_update(layer_ID, 0, 0, w, h);
-    //gimp_drawable_detach(drawable);
-    gimp_progress_end();
-    return LQR_OK;
-}
-
 gint clamp_offset_to_border(gint base, gint offset, gint lower_border, gint upper_border) {
     if (((base + offset) - lower_border) < 0) {
         return (offset - ((base + offset) - lower_border));
@@ -262,25 +222,62 @@ void display_carver_seams(GimpDrawable *drawable, LqrCarver *carver) {
 
 /*  Public functions  */
 
-LqrCarver* init_carver_from_vals(gint layer_ID, PlugInVals *vals) {
+LqrRetVal write_carver_to_layer(LqrCarver * r, gint32 layer_ID) {
+    GimpDrawable * drawable;
+    gint y;
+    gint w, h;
+    GimpPixelRgn rgn_out;
+    guchar *out_line;
+    gint update_step;
+
+    gimp_progress_init(("Applying changes..."));
+    update_step = MAX((lqr_carver_get_height(r) - 1) / 20, 1);
+
+    drawable = gimp_drawable_get(layer_ID);
+
+    w = gimp_drawable_width(layer_ID);
+    h = gimp_drawable_height(layer_ID);
+
+    gimp_pixel_rgn_init(&rgn_out, drawable, 0, 0, w, h, TRUE, FALSE);
+
+    while (lqr_carver_scan_line(r, &y, &out_line)) {
+        if (lqr_carver_scan_by_row(r)) {
+            gimp_pixel_rgn_set_row(&rgn_out, out_line, 0, y, w);
+        } else {
+            gimp_pixel_rgn_set_col(&rgn_out, out_line, y, 0, h);
+        }
+
+        if (y % update_step == 0) {
+            gimp_progress_update((gdouble) y / (lqr_carver_get_height(r) - 1));
+        }
+    }
+
+    gimp_drawable_flush(drawable);
+    //gimp_drawable_merge_shadow(layer_ID, FALSE);
+    gimp_drawable_update(layer_ID, 0, 0, w, h);
+    gimp_drawable_detach(drawable);
+    gimp_displays_flush();
+    gimp_progress_end();
+    return LQR_OK;
+}
+
+LqrCarver* init_carver_from_vals(gint layer_ID, PlugInVals *vals, EnergyParameters *params) {
     LqrCarver *carver;
     LqrProgress* progress;
     gint bpp;
     gint old_width, old_height;
-    gint new_width, new_height;
     gint seams_number;
     guchar* rgb_buffer;
-    EnergyParameters params;
 
     progress = progress_init();
     seams_number = vals->seams_number;
-    params.edges = vals->edges;
-    params.textures = vals->textures;
-    params.blocksize = vals->blocksize;
-    params.ip = alloc_1d_int(2 + (int) sqrt(vals->blocksize/2 + 0.5));
-    params.w = alloc_1d_double(vals->blocksize*3/2);
-    params.data = alloc_2d_double(vals->blocksize, vals->blocksize);
-    params.ip[0] = 0; 
+    params->edges = vals->edges;
+    params->textures = vals->textures;
+    params->blocksize = vals->blocksize;
+    params->ip = alloc_1d_int(2 + (int) sqrt(vals->blocksize/2 + 0.5));
+    params->w = alloc_1d_double(vals->blocksize*3/2);
+    params->data = alloc_2d_double(vals->blocksize, vals->blocksize);
+    params->ip[0] = 0; 
 
     old_width = gimp_drawable_width(layer_ID);
     old_height = gimp_drawable_height(layer_ID);
@@ -289,7 +286,7 @@ LqrCarver* init_carver_from_vals(gint layer_ID, PlugInVals *vals) {
 
     carver = lqr_carver_new(rgb_buffer, old_width, old_height, bpp);
     lqr_carver_init(carver, 1, 0); //numbers are delta_x and rigidity
-    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_LUMA, (void*) &params);
+    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_LUMA, (void*) params);
     lqr_carver_set_progress(carver, progress);
 
     return carver;

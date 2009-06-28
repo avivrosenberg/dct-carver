@@ -19,8 +19,11 @@ typedef struct EnergyParameters_ EnergyParameters;
 
 /*  Public functions  */
 
+LqrRetVal
+write_carver_to_layer(LqrCarver * r, gint32 layer_ID);
+
 LqrCarver*
-init_carver_from_vals(gint layer_ID, PlugInVals *vals);
+init_carver_from_vals(gint layer_ID, PlugInVals *vals, EnergyParameters *params);
 
 void
 render(gint32 layer_ID, PlugInVals *vals, PlugInImageVals *image_vals, PlugInDrawableVals *drawable_vals);
