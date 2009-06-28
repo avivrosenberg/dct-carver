@@ -159,7 +159,7 @@ run(const gchar      *name,
                         run_dialog = FALSE;
                         break;
                     case DC_INTERACTIVE:
-                        dialog_I_resp = gui_interactive_dialog();
+                        dialog_I_resp = gui_interactive_dialog(&vals);
                         switch(dialog_I_resp) {
                             case GTK_RESPONSE_OK:
                                 run_dialog = FALSE;

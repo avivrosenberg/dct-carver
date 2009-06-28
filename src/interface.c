@@ -1,6 +1,7 @@
 #include <gtk/gtk.h>
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
+#include <lqr.h>
 
 
 #include "dct.h"
@@ -30,9 +31,20 @@ void update_preview_checkbox(GimpPreview *gimppreview, gpointer data);
 /*  Public functions  */
 
 gint
-gui_interactive_dialog() {
+gui_interactive_dialog(PlugInVals *vals) {
     GtkWidget *dialog;
+    GtkWidget *main_vbox;
+    GtkWidget *slider_frame;
+    GtkWidget *slider_alignment;
+    GtkWidget *slider_hbox;
+    GtkWidget *min_label;
+    GtkWidget *slider_hscale;
+    GtkWidget *max_label;
+    GtkWidget *slider_frame_label;
+    
     gint response_id;
+    gchar min_label_str[LQR_MAX_NAME_LENGTH];
+    gchar max_label_str[LQR_MAX_NAME_LENGTH];
  
     dialog = gimp_dialog_new("DCT Carver Interactive", "dct-carver",
                              NULL, 0,
@@ -40,6 +52,50 @@ gui_interactive_dialog() {
                              GTK_STOCK_GO_BACK, DC_BACK_TO_MAIN,
                              GTK_STOCK_OK,     GTK_RESPONSE_OK,
                              NULL);
+                             
+    main_vbox = gtk_vbox_new(FALSE, 6);
+    gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), main_vbox);
+    gtk_widget_show(main_vbox);
+    
+    slider_frame = gtk_frame_new(NULL);
+    gtk_box_pack_start(GTK_BOX(main_vbox), slider_frame, TRUE, TRUE, 0);
+    gtk_container_set_border_width(GTK_CONTAINER(slider_frame), 6);
+    gtk_widget_show(slider_frame);
+
+	slider_alignment = gtk_alignment_new(0.5, 0.5, 1, 0);
+	gtk_alignment_set_padding(GTK_ALIGNMENT(slider_alignment), 6, 6, 6, 6);
+    gtk_widget_show(slider_alignment);
+    gtk_container_add(GTK_CONTAINER(slider_frame), slider_alignment);
+    
+	slider_hbox = gtk_hbox_new(FALSE, 0);
+    gtk_widget_show(slider_hbox);
+    gtk_container_add(GTK_CONTAINER(slider_alignment), slider_hbox);
+    
+    g_snprintf(min_label_str, LQR_MAX_NAME_LENGTH, "%d seams",-1*vals->seams_number);
+    min_label = gtk_label_new_with_mnemonic(min_label_str);
+   // gtk_box_pack_start(GTK_BOX(slider_hbox), min_label, FALSE, FALSE, 1);
+    gtk_widget_show(min_label);
+    gtk_label_set_justify(GTK_LABEL(min_label), GTK_JUSTIFY_RIGHT);
+    
+    slider_hscale = gtk_hscale_new_with_range(-1*vals->seams_number, vals->seams_number, 1);
+    gtk_range_set_value(GTK_RANGE(slider_hscale), 0);
+    gtk_range_set_update_policy(GTK_RANGE(slider_hscale), GTK_UPDATE_CONTINUOUS);
+   	gtk_scale_set_draw_value(GTK_SCALE(slider_hscale), TRUE);
+   	gtk_range_set_show_fill_level(GTK_RANGE(slider_hscale), TRUE);
+   	gtk_range_set_fill_level(GTK_RANGE(slider_hscale), vals->seams_number);
+    gtk_widget_show(slider_hscale);
+    gtk_box_pack_start(GTK_BOX(slider_hbox), slider_hscale, TRUE, TRUE, 5);
+    
+    g_snprintf(max_label_str, LQR_MAX_NAME_LENGTH, "%d seams",vals->seams_number);
+    max_label = gtk_label_new_with_mnemonic(max_label_str);
+    //gtk_box_pack_start(GTK_BOX(slider_hbox), max_label, FALSE, FALSE, 1);
+    gtk_widget_show(max_label);
+    gtk_label_set_justify(GTK_LABEL(max_label), GTK_JUSTIFY_RIGHT);
+    
+	slider_frame_label = gtk_label_new("<b>Resize</b>");
+    gtk_widget_show(slider_frame_label);
+    gtk_frame_set_label_widget(GTK_FRAME(slider_frame), slider_frame_label);
+    gtk_label_set_use_markup(GTK_LABEL(slider_frame_label), TRUE);
 
     gtk_widget_show(dialog);
     response_id = gimp_dialog_run(GIMP_DIALOG(dialog));
