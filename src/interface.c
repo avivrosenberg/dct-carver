@@ -17,10 +17,11 @@
 
 /*  Local function prototypes  */
 
-void toggle(GtkToggleButton *toggle_button, gpointer data);
-void change_blocksize(GimpIntComboBox *box, gpointer data);
-void change_preference(GtkHScale *slider,gpointer data);
-void update_preview_checkbox(GimpPreview *gimppreview, gpointer data);
+void callback_toggle_checkbox(GtkToggleButton *toggle_button, gpointer data);
+void callback_change_blocksize(GimpIntComboBox *box, gpointer data);
+void callback_preference_slider(GtkHScale *slider, gpointer data);
+void callback_change_preference(GimpPreview *gimppreview, gpointer data);
+void callback_resize_slider(GtkHScale *slider, gpointer data);
 
 /*  Local variables  */
 
@@ -30,9 +31,11 @@ void update_preview_checkbox(GimpPreview *gimppreview, gpointer data);
 /*  Public functions  */
 
 gint
-gui_interactive_dialog() {
+gui_interactive_dialog(gint layer_ID, PlugInVals *vals) {
     GtkWidget *dialog;
     gint response_id;
+    LqrCarver *carver;
+    PlugInUIIVals ui_i_vals;
  
     dialog = gimp_dialog_new("DCT Carver Interactive", "dct-carver",
                              NULL, 0,
@@ -41,9 +44,22 @@ gui_interactive_dialog() {
                              GTK_STOCK_OK,     GTK_RESPONSE_OK,
                              NULL);
 
+    carver = init_carver_from_vals(layer_ID, vals);
+    ui_i_vals.vals = vals;
+    ui_i_vals.carver = carver;
+    ui_i_vals.old_width = gimp_drawable_width(layer_ID);
+    ui_i_vals.old_height = gimp_drawable_height(layer_ID);
+
+    if(vals->vertically) {
+        lqr_carver_resize(carver, old_width, old_height + vals->seams_number);
+    } else {
+        lqr_carver_resize(carver, old_width + vals->seams_number, old_height);
+    }
+
     gtk_widget_show(dialog);
     response_id = gimp_dialog_run(GIMP_DIALOG(dialog));
     gtk_widget_destroy(dialog);
+    lqr_carver_destroy(carver);
 
     return response_id;
 }
@@ -169,7 +185,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 
     //blocksize_spinbutton = gimp_spin_button_new(&blocksize_spinbutton_adj, vals->blocksize, 2, 16, 1, 1, 0, 5, 0);
     blocksize_combobox = gimp_int_combo_box_new("2",2,"4",4,"8",8,"16",16,NULL);
-    gimp_int_combo_box_connect(GIMP_INT_COMBO_BOX(blocksize_combobox), vals->blocksize, G_CALLBACK(change_blocksize), ui_vals);
+    gimp_int_combo_box_connect(GIMP_INT_COMBO_BOX(blocksize_combobox), vals->blocksize, G_CALLBACK(callback_change_blocksize), ui_vals);
     gtk_box_pack_start(GTK_BOX(blocksize_hbox), blocksize_combobox, FALSE, FALSE, 0);
     gtk_widget_show(blocksize_combobox);
 
@@ -419,7 +435,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                              G_CALLBACK(dct_energy_preview),
                              drawable);
     g_signal_connect(preview, "invalidated",
-					 G_CALLBACK(update_preview_checkbox),
+					 G_CALLBACK(callback_change_preference),
 					 (gpointer)vals);
 
     //g_signal_connect_swapped(blocksize_spinbutton_adj, "value_changed",
@@ -439,7 +455,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                      //&(vals->blocksize));
 
 	g_signal_connect(slider_hscale, "value_changed",
-					 G_CALLBACK(change_preference),
+					 G_CALLBACK(callback_preference_slider),
 					 (gpointer)ui_vals);
 
     //g_signal_connect(edges_adj, "value_changed",
@@ -455,22 +471,22 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                      &(vals->seams_number));
                      
     g_signal_connect (vert, "toggled",
-                     G_CALLBACK (toggle), &(vals->vertically));
+                     G_CALLBACK (callback_toggle_checkbox), &(vals->vertically));
                      
 	g_signal_connect (horizon, "toggled",
-                     G_CALLBACK (toggle), &(vals->horizontally)); 
+                     G_CALLBACK (callback_toggle_checkbox), &(vals->horizontally)); 
                      
     g_signal_connect (new_layer_button, "toggled",
-                     G_CALLBACK (toggle), &(vals->new_layer));
+                     G_CALLBACK (callback_toggle_checkbox), &(vals->new_layer));
                      
     g_signal_connect (resize_canvas_button, "toggled",
-                     G_CALLBACK (toggle), &(vals->resize_canvas)); 
+                     G_CALLBACK (callback_toggle_checkbox), &(vals->resize_canvas)); 
                   
     g_signal_connect (output_energy_button, "toggled",
-                     G_CALLBACK (toggle), &(vals->output_energy)); 
+                     G_CALLBACK (callback_toggle_checkbox), &(vals->output_energy)); 
                      
     g_signal_connect (output_seams_button, "toggled",
-                     G_CALLBACK (toggle), &(vals->output_seams));         
+                     G_CALLBACK (callback_toggle_checkbox), &(vals->output_seams));         
 
     gtk_widget_show(dialog);
 
@@ -487,19 +503,19 @@ error(const gchar* message) {
 }
 
 void
-toggle(GtkToggleButton *toggle_button, gpointer data) {
+callback_toggle_checkbox(GtkToggleButton *toggle_button, gpointer data) {
 	*((gboolean*)data) = gtk_toggle_button_get_active(toggle_button);
 }
 
 void
-change_blocksize(GimpIntComboBox *box, gpointer data) {
+callback_change_blocksize(GimpIntComboBox *box, gpointer data) {
 	PlugInUIVals* ui_vals = (PlugInUIVals*)data;
 	gimp_int_combo_box_get_active(box, &((ui_vals->vals)->blocksize));
 	gimp_preview_invalidate(ui_vals->preview);
 }
 
 void 
-change_preference(GtkHScale *slider, gpointer data){
+callback_preference_slider(GtkHScale *slider, gpointer data) {
 	PlugInUIVals* ui_vals = (PlugInUIVals*)data;
 	gdouble slider_val = gtk_range_get_value(GTK_RANGE(slider));
 	
@@ -509,9 +525,30 @@ change_preference(GtkHScale *slider, gpointer data){
 }
 
 void
-update_preview_checkbox(GimpPreview *gimppreview, gpointer data){
+callback_change_preference(GimpPreview *gimppreview, gpointer data) {
 	PlugInVals* vals = (PlugInVals*)data;
 	vals->preview = gimp_preview_get_update(gimppreview);
 }
 	
+void callback_resize_slider(GtkHScale *slider, gpointer data) {
+    PlugInUIIVals* ui_i_vals = (PlugInUIIVals*) data;
+	gdouble slider_val = gtk_range_get_value(GTK_RANGE(slider));
+    gint new_width, new_height;
+    gint ntiles;
 
+    if (ui_i_vals->vals->vertically) {
+        new_width = ui_i_vals->old_width;
+        new_height = ui_i_vals->old_height + slider_val;
+    } else {
+        new_width = ui_i_vals->old_width + slider_val;
+        new_height = ui_i_vals->old_height;
+    }
+
+    lqr_carver_resize(carver, new_width, new_height);
+    gimp_layer_resize(ui_i_vals->layer_ID, new_width, new_height, 0, 0);
+
+    ntiles = new_width / gimp_tile_width() + 1;
+    gimp_tile_cache_size((gimp_tile_width() * gimp_tile_height() * ntiles * 4 * 2) / 1024 + 1);
+    write_carver_to_layer(carver, ui_i_vals->layer_ID);
+
+}

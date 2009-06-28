@@ -30,10 +30,17 @@ typedef struct {
 } PlugInDrawableVals;
 
 typedef struct {
-    //gboolean  chain_active;
     PlugInVals *vals;
     GimpPreview *preview;
 } PlugInUIVals;
+
+typedef struct {
+    PlugInVals *vals;
+    gint old_width;
+    gint old_height;
+    gint layer_ID;
+    LqrCarver* carver;
+} PlugInUIIVals;
 
 typedef enum {DC_INTERACTIVE = 1, DC_BACK_TO_MAIN = 2} dc_dialog_response;
 

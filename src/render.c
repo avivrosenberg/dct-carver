@@ -151,7 +151,7 @@ LqrRetVal write_carver_to_layer(LqrCarver * r, gint32 layer_ID) {
 
     gimp_drawable_merge_shadow(layer_ID, TRUE);
     gimp_drawable_update(layer_ID, 0, 0, w, h);
-    gimp_drawable_detach(drawable);
+    //gimp_drawable_detach(drawable);
     gimp_progress_end();
     return LQR_OK;
 }
@@ -261,6 +261,39 @@ void display_carver_seams(GimpDrawable *drawable, LqrCarver *carver) {
 }
 
 /*  Public functions  */
+
+LqrCarver* init_carver_from_vals(gint layer_ID, PlugInVals *vals) {
+    LqrCarver *carver;
+    LqrProgress* progress;
+    gint bpp;
+    gint old_width, old_height;
+    gint new_width, new_height;
+    gint seams_number;
+    guchar* rgb_buffer;
+    EnergyParameters params;
+
+    progress = progress_init();
+    seams_number = vals->seams_number;
+    params.edges = vals->edges;
+    params.textures = vals->textures;
+    params.blocksize = vals->blocksize;
+    params.ip = alloc_1d_int(2 + (int) sqrt(vals->blocksize/2 + 0.5));
+    params.w = alloc_1d_double(vals->blocksize*3/2);
+    params.data = alloc_2d_double(vals->blocksize, vals->blocksize);
+    params.ip[0] = 0; 
+
+    old_width = gimp_drawable_width(layer_ID);
+    old_height = gimp_drawable_height(layer_ID);
+    bpp = gimp_drawable_bpp(layer_ID);
+    rgb_buffer = rgb_buffer_from_layer(layer_ID);
+
+    carver = lqr_carver_new(rgb_buffer, old_width, old_height, bpp);
+    lqr_carver_init(carver, 1, 0); //numbers are delta_x and rigidity
+    lqr_carver_set_energy_function(carver, dct_pixel_energy, vals->blocksize / 2, LQR_ER_LUMA, (void*) &params);
+    lqr_carver_set_progress(carver, progress);
+
+    return carver;
+}
 
 void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, PlugInDrawableVals *drawable_vals) {
 
