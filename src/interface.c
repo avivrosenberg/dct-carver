@@ -20,10 +20,11 @@
 void toggle(GtkToggleButton *toggle_button, gpointer data);
 void change_blocksize(GimpIntComboBox *box, gpointer data);
 void change_preference(GtkHScale *slider,gpointer data);
+void update_preview_checkbox(GimpPreview *gimppreview, gpointer data);
 
 /*  Local variables  */
 
-static PlugInUIVals *ui_state = NULL;
+//static PlugInUIVals *ui_state = NULL;
 
 
 /*  Public functions  */
@@ -78,6 +79,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *new_layer_button;
     GtkWidget *resize_canvas_button;
     GtkWidget *output_energy_button;
+    GtkWidget *output_seams_button;
     GtkWidget *options_frame_label;
     
     
@@ -181,7 +183,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_label_set_justify(GTK_LABEL(edges_label), GTK_JUSTIFY_RIGHT);
     
     slider_hscale = gtk_hscale_new_with_range(0, 1, 0.01);
-    gtk_range_set_value(GTK_RANGE(slider_hscale), 0.5);
+    gtk_range_set_value(GTK_RANGE(slider_hscale), vals->textures);
     gtk_range_set_update_policy(GTK_RANGE(slider_hscale), GTK_UPDATE_CONTINUOUS);
     //gtk_scale_add_mark(GTK_SCALE(slider_hscale), 0, GTK_POS_BOTTOM, "Textures" );
     //gtk_scale_add_mark(GTK_SCALE(slider_hscale), 1, GTK_POS_BOTTOM, "Edges" );
@@ -370,6 +372,18 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gimp_help_set_help_data (output_energy_button,
 			   ("Output the energy that was computed "
 			     "onto a new image"), NULL);
+			     
+	output_seams_button =
+     gtk_check_button_new_with_label (("Output Seams"));
+
+   	gtk_box_pack_start (GTK_BOX (options_vbox), output_seams_button, FALSE, FALSE, 0);
+   	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (output_seams_button),
+				vals->output_seams);
+   	gtk_widget_show (output_seams_button);
+
+    gimp_help_set_help_data (output_seams_button,
+			   ("Output the seams that was computed "
+			     "onto the original image"), NULL);
 	
 	options_frame_label = gtk_label_new("<b>Output options</b>");
     gtk_widget_show(options_frame_label);
@@ -384,6 +398,9 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     g_signal_connect_swapped(preview, "invalidated",
                              G_CALLBACK(dct_energy_preview),
                              drawable);
+    g_signal_connect(preview, "invalidated",
+					 G_CALLBACK(update_preview_checkbox),
+					 (gpointer)vals);
 
     //g_signal_connect_swapped(blocksize_spinbutton_adj, "value_changed",
                              //G_CALLBACK(gimp_preview_invalidate),
@@ -430,7 +447,10 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                      G_CALLBACK (toggle), &(vals->resize_canvas)); 
                   
     g_signal_connect (output_energy_button, "toggled",
-                     G_CALLBACK (toggle), &(vals->output_energy));          
+                     G_CALLBACK (toggle), &(vals->output_energy)); 
+                     
+    g_signal_connect (output_seams_button, "toggled",
+                     G_CALLBACK (toggle), &(vals->output_seams));         
 
     gtk_widget_show(dialog);
 
@@ -466,6 +486,12 @@ change_preference(GtkHScale *slider, gpointer data){
 	(ui_vals->vals)->textures = slider_val;
 	(ui_vals->vals)->edges = 1 - slider_val;
 	gimp_preview_invalidate(ui_vals->preview);
+}
+
+void
+update_preview_checkbox(GimpPreview *gimppreview, gpointer data){
+	PlugInVals* vals = (PlugInVals*)data;
+	vals->preview = gimp_preview_get_update(gimppreview);
 }
 	
 

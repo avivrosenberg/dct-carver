@@ -16,9 +16,9 @@ typedef struct {
     gboolean	new_layer;
     gboolean	resize_canvas;
     gboolean	output_energy;
+    gboolean	output_seams;
     gboolean	vertically;
     gboolean	horizontally;
-    gboolean    output_seams;
 } PlugInVals;
 
 typedef struct {
