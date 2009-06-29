@@ -33,6 +33,9 @@ typedef struct {
 
 typedef struct {
     PlugInVals *vals;
+    GtkObject *seams_number_spinbutton_adj;
+    gint width;
+    gint height;
     GimpPreview *preview;
 } PlugInUIVals;
 

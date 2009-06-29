@@ -23,6 +23,9 @@ void callback_change_blocksize(GimpIntComboBox *box, gpointer data);
 void callback_preference_slider(GtkHScale *slider, gpointer data);
 void callback_change_preference(GimpPreview *gimppreview, gpointer data);
 void callback_resize_slider(GtkHScale *slider, gpointer data);
+void callback_update_spinbutton_boundries_vert(GtkToggleButton *toggle_button, gpointer data);
+void callback_update_spinbutton_boundries_horz(GtkToggleButton *toggle_button, gpointer data);
+
 
 /*  Local variables  */
 
@@ -83,12 +86,12 @@ gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
     gtk_widget_show(min_label);
     gtk_label_set_justify(GTK_LABEL(min_label), GTK_JUSTIFY_RIGHT);
     
-    slider_hscale = gtk_hscale_new_with_range(-1*vals->seams_number, vals->seams_number, 1);
+    slider_hscale = gtk_hscale_new_with_range(-1*(ABS(vals->seams_number)), ABS(vals->seams_number), 1);
     gtk_range_set_value(GTK_RANGE(slider_hscale), 0);
     gtk_range_set_update_policy(GTK_RANGE(slider_hscale), GTK_UPDATE_CONTINUOUS);
    	gtk_scale_set_draw_value(GTK_SCALE(slider_hscale), TRUE);
    	gtk_range_set_show_fill_level(GTK_RANGE(slider_hscale), TRUE);
-   	gtk_range_set_fill_level(GTK_RANGE(slider_hscale), vals->seams_number);
+   	gtk_range_set_fill_level(GTK_RANGE(slider_hscale), ABS(vals->seams_number));
     gtk_widget_show(slider_hscale);
     gtk_box_pack_start(GTK_BOX(slider_hbox), slider_hscale, TRUE, TRUE, 5);
     
@@ -123,12 +126,15 @@ gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
 	g_signal_connect(slider_hscale, "value_changed",
 					 G_CALLBACK(callback_resize_slider),
 					 (gpointer)(&ui_i_vals));
-
+	
     gtk_widget_show(dialog);
     response_id = gimp_dialog_run(GIMP_DIALOG(dialog));
+    if (response_id == DC_BACK_TO_MAIN) {
+    	gtk_range_set_value(GTK_RANGE(slider_hscale), 0);
+		}
     gtk_widget_destroy(dialog);
     lqr_carver_destroy(carver);
-
+    
     return response_id;
 }
 
@@ -300,27 +306,6 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_box_pack_start(GTK_BOX(sliders_hbox), textures_label, FALSE, FALSE, 1);
     gtk_widget_show(textures_label);
     gtk_label_set_justify(GTK_LABEL(textures_label), GTK_JUSTIFY_RIGHT);
-    
-
-    //sliders_table = gtk_table_new(2, 3, FALSE);
-    //gtk_table_set_col_spacings(GTK_TABLE(sliders_table), 6);
-    //gtk_table_set_row_spacings(GTK_TABLE(sliders_table), 2);
-    //gtk_container_add(GTK_CONTAINER(sliders_alignment), sliders_table);
-    //gtk_widget_show(sliders_table);
-
-    //row = 0;
-
-    //edges_adj = gimp_scale_entry_new(GTK_TABLE(sliders_table), 0, row++,
-                                     //("Edges:"), SCALE_WIDTH, SPIN_BUTTON_WIDTH,
-                                     //vals->edges, 0.0, 1.0, 0.01, 0.1, 2,
-                                     //TRUE, 0, 0,
-                                     //("Scale factor for DCT atoms coresponding to edges"), NULL);
-
-    //textures_adj = gimp_scale_entry_new(GTK_TABLE(sliders_table), 0, row++,
-                                        //("Textures:"), SCALE_WIDTH, SPIN_BUTTON_WIDTH,
-                                        //vals->textures, 0.0, 1.0, 0.01, 0.1, 2,
-                                        //TRUE, 0, 0,
-                                        //("Scale factor for DCT atoms coresponding to textures"), NULL);
 
 	sliders_frame_label = gtk_label_new("<b>Egde/texture preservation preference</b>");
     gtk_widget_show(sliders_frame_label);
@@ -368,12 +353,22 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 
 	width = drawable->width;
 	height = drawable->height;
-	seams_bound = width<height ? width : height;
+	seams_bound = (vals->horizontally) ? width : height;
 	
     seams_number_spinbutton = gimp_spin_button_new(&seams_number_spinbutton_adj, vals->seams_number,
-                                      -1*seams_bound, seams_bound, 1, 1, 0, 5, 0);
+                                      -1*seams_bound + 1, seams_bound, 1, 1, 0, 5, 0);
     gtk_box_pack_start(GTK_BOX(seams_number_hbox), seams_number_spinbutton, FALSE, FALSE, 0);
     gtk_widget_show(seams_number_spinbutton);
+    
+    gimp_help_set_help_data (seams_number_spinbutton,
+			   ("(-) for reduction (+) for enlarging."
+			    " the absolute value will be taken "
+			    "for the Interacive option"), NULL);
+	
+	ui_vals->seams_number_spinbutton_adj = seams_number_spinbutton_adj;
+	ui_vals->width = width;
+	ui_vals->height = height;
+	
    	//seams number - end
 	
 	//direction - start
@@ -502,37 +497,14 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     g_signal_connect_swapped(preview, "invalidated",
                              G_CALLBACK(dct_energy_preview),
                              drawable);
-    g_signal_connect(preview, "invalidated",
+                             
+    /* g_signal_connect(preview, "invalidated",
 					 G_CALLBACK(callback_change_preference),
-					 (gpointer)vals);
-
-    //g_signal_connect_swapped(blocksize_spinbutton_adj, "value_changed",
-                             //G_CALLBACK(gimp_preview_invalidate),
-                             //preview);
-
-    //g_signal_connect_swapped(edges_adj, "value_changed",
-                             //G_CALLBACK(gimp_preview_invalidate),
-                             //preview);
-
-    //g_signal_connect_swapped(textures_adj, "value_changed",
-                             //G_CALLBACK(gimp_preview_invalidate),
-                             //preview);
-                                                   
-    //g_signal_connect(blocksize_spinbutton_adj, "value_changed",
-                     //G_CALLBACK(gimp_int_adjustment_update),
-                     //&(vals->blocksize));
+					 (gpointer)vals); */
 
 	g_signal_connect(slider_hscale, "value_changed",
 					 G_CALLBACK(callback_preference_slider),
 					 (gpointer)ui_vals);
-
-    //g_signal_connect(edges_adj, "value_changed",
-                     //G_CALLBACK(gimp_float_adjustment_update),
-                     //&(vals->edges));
-
-    //g_signal_connect(textures_adj, "value_changed",
-                     //G_CALLBACK(gimp_float_adjustment_update),
-                     //&(vals->textures));
                      
     g_signal_connect(seams_number_spinbutton_adj, "value_changed",
                      G_CALLBACK(gimp_int_adjustment_update),
@@ -540,9 +512,16 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
                      
     g_signal_connect (vert, "toggled",
                      G_CALLBACK (callback_toggle_checkbox), &(vals->vertically));
-                     
+    
+    g_signal_connect (vert, "toggled",
+                     G_CALLBACK (callback_update_spinbutton_boundries_vert), (gpointer)ui_vals);
+    
 	g_signal_connect (horizon, "toggled",
                      G_CALLBACK (callback_toggle_checkbox), &(vals->horizontally)); 
+    
+     g_signal_connect (horizon, "toggled",
+                     G_CALLBACK (callback_update_spinbutton_boundries_horz), (gpointer)ui_vals);
+    
                      
     g_signal_connect (new_layer_button, "toggled",
                      G_CALLBACK (callback_toggle_checkbox), &(vals->new_layer));
@@ -574,6 +553,50 @@ void
 callback_toggle_checkbox(GtkToggleButton *toggle_button, gpointer data) {
 	*((gboolean*)data) = gtk_toggle_button_get_active(toggle_button);
 }
+
+void callback_update_spinbutton_boundries_vert(GtkToggleButton *toggle_button, gpointer data) {
+	PlugInUIVals* ui_vals = (PlugInUIVals*)data;
+	gdouble value;
+	GtkAdjustment* adj =GTK_ADJUSTMENT(ui_vals->seams_number_spinbutton_adj);
+							  	 
+	if (gtk_toggle_button_get_mode(toggle_button)) {
+		gtk_adjustment_set_lower (adj, 
+							  	 (-1*(ui_vals->height))+1);
+		gtk_adjustment_set_upper (adj, 
+							  	 (ui_vals->height));
+		}
+	
+	value = gtk_adjustment_get_value(adj);
+	if (value < -1*(ui_vals->height) + 1) {
+		gtk_adjustment_set_value(adj, -1*(ui_vals->height) + 1);
+		}
+    if (value > (ui_vals->height)){
+		gtk_adjustment_set_value(adj, (ui_vals->height));
+		}
+	
+}
+
+void callback_update_spinbutton_boundries_horz(GtkToggleButton *toggle_button, gpointer data) {
+	PlugInUIVals* ui_vals = (PlugInUIVals*)data;
+	gdouble value;
+	GtkAdjustment* adj =GTK_ADJUSTMENT(ui_vals->seams_number_spinbutton_adj);
+							  	 
+	if (gtk_toggle_button_get_mode(toggle_button)) {
+		gtk_adjustment_set_lower (adj, 
+							  	 (-1*(ui_vals->width))+1);
+		gtk_adjustment_set_upper (adj, 
+							  	 (ui_vals->width));
+		}
+	
+	value = gtk_adjustment_get_value(adj);
+	if (value < -1*(ui_vals->width)+1) {
+		gtk_adjustment_set_value(adj, -1*(ui_vals->width)+1);
+		}
+    if (value > (ui_vals->width)){
+		gtk_adjustment_set_value(adj, (ui_vals->width));
+		}
+}
+
 
 void
 callback_change_blocksize(GimpIntComboBox *box, gpointer data) {

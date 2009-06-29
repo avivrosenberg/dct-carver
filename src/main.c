@@ -50,9 +50,11 @@ const PlugInDrawableVals default_drawable_vals = {
 };
 
 const PlugInUIVals default_ui_vals = {
-    //TRUE,
-    NULL,
-    NULL
+    NULL, //vals
+    NULL, //seams_number_spinbutton_adj
+    0, //width
+    0, //height
+    NULL //preview
 };
 
 PlugInVals			vals;
