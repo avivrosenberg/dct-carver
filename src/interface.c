@@ -231,8 +231,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 	
 	//preview - start
 	
-    preview = gimp_drawable_preview_new(drawable, &(vals->preview));
-    gimp_preview_set_update(GIMP_PREVIEW(preview), vals->preview);
+    preview = gimp_drawable_preview_new(drawable, NULL);
     gtk_box_pack_start(GTK_BOX(energy_hbox), preview, TRUE, TRUE, 0);
     gtk_widget_show(preview);
     

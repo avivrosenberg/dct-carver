@@ -86,18 +86,17 @@ query(void) {
     gimp_install_procedure(
         PLUGIN_NAME,
         "DCT Carver",
-        "Computes an energy function for the image based on DCT atoms",
+        "Seam-carving with a novel DCT-based energy function",
         "[author]",
         "[copyright]",
         "[date]",
-        "DCT Carver",
+        "_DCT Carver",
         "RGB*, GRAY*",
         GIMP_PLUGIN,
         G_N_ELEMENTS(args), 0,
         args, NULL);
 
-    gimp_plugin_menu_register(PLUGIN_NAME,
-                              "<Image>/Filters/Misc");
+    gimp_plugin_menu_register(PLUGIN_NAME, "<Image>/Layer/");
 }
 
 static void
@@ -198,8 +197,9 @@ run(const gchar      *name,
             render(image_ID, &vals, &image_vals, &drawable_vals);
         }
 
-        if (run_mode != GIMP_RUN_NONINTERACTIVE)
+        if (run_mode != GIMP_RUN_NONINTERACTIVE) {
             gimp_displays_flush();
+        }
 
         if (run_mode == GIMP_RUN_INTERACTIVE) {
             gimp_set_data(DATA_KEY_VALS,    &vals,    sizeof(vals));
@@ -207,7 +207,6 @@ run(const gchar      *name,
 
             gimp_drawable_detach(drawable);
         }
-        //gimp_drawable_detach(drawable_orig);
     }
 
     /*  Finally, set options in the core  */

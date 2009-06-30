@@ -7,6 +7,41 @@
 
 /*	Constants */
 
+static guint8 lut2x2[] = {0, 1,
+                          1, 0};
+
+static guint8 lut4x4[] = {0, 1, 0, 0,
+                          1, 0, 0, 0,
+                          0, 0, 0, 0,
+                          0, 0, 0, 0};
+
+static guint8 lut8x8[] = {0, 1, 0, 0, 0, 0, 0, 0,
+                          1, 0, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0};
+
+static guint8 lut16x16[] = 
+                        {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 /* 	Private functions */
 
 /* Prototypes of functions for fast DCT calculation.
@@ -17,6 +52,27 @@ void ddct8x8s(int isgn, double **a);
 void ddct16x16s(int isgn, double **a);
 void ddct2d(int n1, int n2, int isgn, double **a, double *t, int *ip, double *w);
 /* End of functions prototypes from the fft2d package */
+
+gboolean is_edge_atom(gint blocksize, gint k1, gint k2) {
+    gboolean retval;
+    switch(blocksize) {
+        case 2:
+            retval = lut2x2[k1*blocksize + k2];
+            break;
+        case 4:
+            retval = lut4x4[k1*blocksize + k2];
+            break;
+        case 8:
+            retval = lut8x8[k1*blocksize + k2];
+            break;
+        case 16:
+            retval = lut16x16[k1*blocksize + k2];
+            break;
+    }
+    return retval;
+}
+
+/* 	Public functions */
 
 void dctNxN(int n, double **data, int* ip, double* w) {
     switch(n) {
@@ -31,7 +87,7 @@ void dctNxN(int n, double **data, int* ip, double* w) {
             ddct16x16s(-1,data);
             break;
         default:
-            error("N (blocksize) wasn't a factor of 2 in dctNxN");
+            error("N (blocksize) wasn't a power of 2 in dctNxN");
             exit(1);
             break;
     }
@@ -50,6 +106,6 @@ gfloat weighted_max_dct_correlation(int blocksize, double** dct_data, gfloat edg
             }
         }
     }
-    return (IS_EDGE_ATOM(blocksize,k1max,k2max) ? max*edges : max*textures);
+    return (is_edge_atom(blocksize,k1max,k2max) ? max*edges : max*textures);
 }
 

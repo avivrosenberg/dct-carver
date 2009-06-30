@@ -9,7 +9,6 @@
 #define CENTER_COL(blocksize) (ROUND(((blocksize)-1)/2))
 #define IS_EDGE_ATOM(blocksize,k1,k2) (((k1)+(k2)) < ((blocksize)-2))
 
-
 /*  Public functions  */
 void dctNxN(int n, double **data, int* ip, double* w);
 gfloat weighted_max_dct_correlation(int blocksize, double** data, gfloat edges, gfloat textures);
