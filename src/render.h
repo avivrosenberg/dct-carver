@@ -17,13 +17,24 @@ struct EnergyParameters_ {
 
 typedef struct EnergyParameters_ EnergyParameters;
 
+struct CarverData_ {
+    LqrCarver* carver;
+    LqrProgress* progress;
+    gint old_width;
+    gint old_height;
+    gint channels;
+    EnergyParameters* energy_params; //needed in order to free it
+};
+
+typedef struct CarverData_ CarverData;
+
 /*  Public functions  */
 
-LqrRetVal
-write_carver_to_layer(LqrCarver * r, gint32 layer_ID);
+void
+write_carver_to_layer(LqrCarver * r, gint32 layer_ID, gboolean progress_update);
 
-LqrCarver*
-init_carver_from_vals(gint layer_ID, PlugInVals *vals, EnergyParameters *params);
+CarverData
+init_carver_from_vals(gint layer_ID, PlugInVals *vals);
 
 void
 render(gint32 layer_ID, PlugInVals *vals, PlugInImageVals *image_vals, PlugInDrawableVals *drawable_vals);

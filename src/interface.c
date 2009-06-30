@@ -51,9 +51,10 @@ gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
     gchar max_label_str[LQR_MAX_NAME_LENGTH];
 
     gint old_width, old_height;
+    CarverData carver_data;
     LqrCarver *carver;
+    LqrProgress* progress;
     PlugInUIIVals ui_i_vals;
-    EnergyParameters energy_params;
  
     dialog = gimp_dialog_new("DCT Carver Interactive", "dct-carver",
                              NULL, 0,
@@ -106,9 +107,11 @@ gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
     gtk_frame_set_label_widget(GTK_FRAME(slider_frame), slider_frame_label);
     gtk_label_set_use_markup(GTK_LABEL(slider_frame_label), TRUE);
 
-    old_width = gimp_drawable_width(layer_ID);
-    old_height = gimp_drawable_height(layer_ID);
-    carver = init_carver_from_vals(layer_ID, vals, &energy_params);
+    carver_data = init_carver_from_vals(layer_ID, vals);
+    carver = carver_data.carver;
+    progress = carver_data.progress;
+    old_width = carver_data.old_width;
+    old_height = carver_data.old_height;
     ui_i_vals.vals = vals;
     ui_i_vals.carver = carver;
     ui_i_vals.old_width = old_width;
@@ -117,6 +120,8 @@ gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
     ui_i_vals.image_ID = image_ID;
     ui_i_vals.layer_ID = layer_ID;
 
+    lqr_progress_set_init_width_message(progress, ("Calculating seams..."));
+    lqr_progress_set_init_height_message(progress, ("Calculating seams..."));
     if(vals->vertically) {
         lqr_carver_resize(carver, old_width, old_height + vals->seams_number);
     } else {
@@ -134,7 +139,11 @@ gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
 		}
     gtk_widget_destroy(dialog);
     lqr_carver_destroy(carver);
-    
+
+    free_1d_int(carver_data.energy_params->ip);
+    free_1d_double(carver_data.energy_params->w);
+    free_2d_double(carver_data.energy_params->data);
+
     return response_id;
 }
 
@@ -642,6 +651,6 @@ callback_resize_slider(GtkHScale *slider, gpointer data) {
 
     ntiles = new_width / gimp_tile_width() + 1;
     gimp_tile_cache_size((gimp_tile_width() * gimp_tile_height() * ntiles * 4 * 2) / 1024 + 1);
-    write_carver_to_layer(ui_i_vals->carver, ui_i_vals->layer_ID);
+    write_carver_to_layer(ui_i_vals->carver, ui_i_vals->layer_ID, FALSE);
 
 }

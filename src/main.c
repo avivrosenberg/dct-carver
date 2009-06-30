@@ -131,7 +131,7 @@ run(const gchar      *name,
     image_vals    = default_image_vals;
     drawable_vals = default_drawable_vals;
     ui_vals       = default_ui_vals;
-
+    gimp_image_undo_group_start(image_ID); //make whole plugin a single undo step
     switch (run_mode) {
 
         case GIMP_RUN_NONINTERACTIVE:
@@ -218,6 +218,6 @@ run(const gchar      *name,
 
     values[0].type = GIMP_PDB_STATUS;
     values[0].data.d_status = status;
-
+    gimp_image_undo_group_end(image_ID);
     return;
 }
