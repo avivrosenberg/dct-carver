@@ -6,11 +6,12 @@
 /*  Public functions  */
 
 gint
-gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImageVals *image_vals, 
+gui_dialog(PlugInVals *vals, PlugInImageVals *image_vals, 
            PlugInDrawableVals *drawable_vals, PlugInUIVals *ui_vals);
 
 gint
-gui_interactive_dialog();
+gui_interactive_dialog(PlugInVals *vals, PlugInImageVals *image_vals,
+                       PlugInDrawableVals *drawable_vals);
 
 void error(const gchar* message);
 

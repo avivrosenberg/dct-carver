@@ -37,9 +37,9 @@ CarverData
 init_carver_from_vals(gint layer_ID, PlugInVals *vals);
 
 void
-render(gint32 layer_ID, PlugInVals *vals, PlugInImageVals *image_vals, PlugInDrawableVals *drawable_vals);
+render(PlugInVals *vals, PlugInImageVals *image_vals, PlugInDrawableVals *drawable_vals);
 
 void
-dct_energy_preview(GimpDrawable *drawable, GimpPreview *preview);
+dct_energy_preview(PlugInUIVals *ui_vals, GimpPreview *preview);
 
 #endif /* __RENDER_H__ */

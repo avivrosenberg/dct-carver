@@ -21,7 +21,7 @@
 void callback_toggle_checkbox(GtkToggleButton *toggle_button, gpointer data);
 void callback_change_blocksize(GimpIntComboBox *box, gpointer data);
 void callback_preference_slider(GtkHScale *slider, gpointer data);
-void callback_change_preference(GimpPreview *gimppreview, gpointer data);
+//void callback_change_preference(GimpPreview *gimppreview, gpointer data);
 void callback_resize_slider(GtkHScale *slider, gpointer data);
 void callback_update_spinbutton_boundries_vert(GtkToggleButton *toggle_button, gpointer data);
 void callback_update_spinbutton_boundries_horz(GtkToggleButton *toggle_button, gpointer data);
@@ -35,8 +35,17 @@ void callback_update_spinbutton_boundries_horz(GtkToggleButton *toggle_button, g
 /*  Public functions  */
 
 gint
-gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
+gui_interactive_dialog(PlugInVals *vals, PlugInImageVals *image_vals,
+                       PlugInDrawableVals *drawable_vals) {
+
+    gint32 image_ID;
+    gint32 layer_ID;
     gint response_id;
+    gint old_width, old_height;
+    CarverData carver_data;
+    LqrCarver *carver;
+    LqrProgress* progress;
+    PlugInUIIVals ui_i_vals;
 
     GtkWidget *dialog;
     GtkWidget *main_vbox;
@@ -50,12 +59,9 @@ gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
     gchar min_label_str[LQR_MAX_NAME_LENGTH];
     gchar max_label_str[LQR_MAX_NAME_LENGTH];
 
-    gint old_width, old_height;
-    CarverData carver_data;
-    LqrCarver *carver;
-    LqrProgress* progress;
-    PlugInUIIVals ui_i_vals;
- 
+    image_ID = image_vals->image_id;
+    layer_ID = drawable_vals->drawable_id; 
+
     dialog = gimp_dialog_new("DCT Carver Interactive", "dct-carver",
                              NULL, 0,
                              gimp_standard_help_func, PLUGIN_NAME,
@@ -148,8 +154,11 @@ gui_interactive_dialog(gint image_ID, gint layer_ID, PlugInVals *vals) {
 }
 
 gint
-gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImageVals *image_vals, 
+gui_dialog(PlugInVals *vals, PlugInImageVals *image_vals, 
            PlugInDrawableVals *drawable_vals, PlugInUIVals *ui_vals) {
+
+    gint32 image_ID;
+    GimpDrawable *drawable;
 
     GtkWidget *dialog;
     GtkWidget *main_vbox;
@@ -207,6 +216,8 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     GtkWidget *radio_frame_label;
     GtkWidget *radio_vbox;
     
+    image_ID = image_vals->image_id;
+    drawable = gimp_drawable_get(drawable_vals->drawable_id);
 	ui_vals->vals = vals;
 
     gimp_ui_init("dct-carver", FALSE);
@@ -236,6 +247,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     gtk_widget_show(preview);
     
     ui_vals->preview = GIMP_PREVIEW(preview);
+    ui_vals->drawable = drawable;
     
 	//preview - end
 
@@ -361,7 +373,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 
 	width = drawable->width;
 	height = drawable->height;
-	seams_bound = (vals->horizontally) ? width : height;
+	seams_bound = (vals->vertically) ? height : width;
 	
     seams_number_spinbutton = gimp_spin_button_new(&seams_number_spinbutton_adj, vals->seams_number,
                                       -1*seams_bound + 1, seams_bound, 1, 1, 0, 5, 0);
@@ -410,7 +422,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
 
 	horizon = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(vert), "Horizontally");
 	gtk_widget_show(horizon);
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(horizon), vals->horizontally);
+	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(horizon), !vals->vertically);
 	
 	gtk_box_pack_start(GTK_BOX(radio_vbox), vert, TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(radio_vbox), horizon, TRUE, TRUE, 0);
@@ -504,7 +516,7 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
      * */
     g_signal_connect_swapped(preview, "invalidated",
                              G_CALLBACK(dct_energy_preview),
-                             drawable);
+                             (gpointer)ui_vals);
                              
     /* g_signal_connect(preview, "invalidated",
 					 G_CALLBACK(callback_change_preference),
@@ -523,11 +535,8 @@ gui_dialog(gint32 image_ID, GimpDrawable *drawable, PlugInVals *vals, PlugInImag
     
     g_signal_connect (vert, "toggled",
                      G_CALLBACK (callback_update_spinbutton_boundries_vert), (gpointer)ui_vals);
-    
-	g_signal_connect (horizon, "toggled",
-                     G_CALLBACK (callback_toggle_checkbox), &(vals->horizontally)); 
-    
-     g_signal_connect (horizon, "toggled",
+
+    g_signal_connect (horizon, "toggled",
                      G_CALLBACK (callback_update_spinbutton_boundries_horz), (gpointer)ui_vals);
     
                      
@@ -623,11 +632,11 @@ callback_preference_slider(GtkHScale *slider, gpointer data) {
 	gimp_preview_invalidate(ui_vals->preview);
 }
 
-void
+/* void
 callback_change_preference(GimpPreview *gimppreview, gpointer data) {
 	PlugInVals* vals = (PlugInVals*)data;
 	vals->preview = gimp_preview_get_update(gimppreview);
-}
+} */
 	
 void
 callback_resize_slider(GtkHScale *slider, gpointer data) {

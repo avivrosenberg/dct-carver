@@ -26,9 +26,9 @@ void new_image_from_layer_with_filename(gint* new_image_ID, gint* new_layer_ID, 
 }
 
 static void
-dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_number, gint width) {
+dct_energy_preview_rows(PlugInVals *vals, guchar **current_rows, gdouble *energy_image, gint row_number, gint width) {
     gint j;
-    gint blocksize = vals.blocksize;
+    gint blocksize = vals->blocksize;
     gint ii, jj;
     gdouble max_in_pixel;
     double** data = alloc_2d_double(blocksize,blocksize);
@@ -47,7 +47,7 @@ dct_energy_preview_rows(guchar **current_rows, gdouble *energy_image, gint row_n
             }
         }
         dctNxN(blocksize, data, ip, w);
-        max_in_pixel = weighted_max_dct_correlation(blocksize, data, vals.edges, vals.textures); 
+        max_in_pixel = weighted_max_dct_correlation(blocksize, data, vals->edges, vals->textures); 
 
         energy_image[row_number*width + j] = max_in_pixel;
     } //j
@@ -321,11 +321,12 @@ CarverData init_carver_from_vals(gint layer_ID, PlugInVals *vals) {
     return carver_data;
 }
 
-void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, PlugInDrawableVals *drawable_vals) {
+void render(PlugInVals *vals, PlugInImageVals *image_vals, PlugInDrawableVals *drawable_vals) {
 
     CarverData carver_data;
     LqrCarver *carver;
-    gint layer_ID;
+    gint32 image_ID;
+    gint32 layer_ID;
     gint old_width, old_height;
     gint new_width, new_height;
     gint32 energy_image_ID, energy_layer_ID = -1;
@@ -333,7 +334,8 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     gint x_off,y_off;
     gchar new_layer_name[LQR_MAX_NAME_LENGTH];
 
-    layer_ID = gimp_image_get_active_layer(image_ID);
+    image_ID = image_vals->image_id;
+    layer_ID = drawable_vals->drawable_id;
     carver_data = init_carver_from_vals(layer_ID, vals);
     carver = carver_data.carver;
     old_width = carver_data.old_width;
@@ -395,9 +397,13 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
         gimp_image_set_active_layer (image_ID, layer_ID);
     }
     if (energy_layer_ID != -1) {
+        image_vals->energy_image_id = energy_image_ID;
+        drawable_vals->energy_layer_id = energy_layer_ID;
         gimp_display_new(energy_image_ID);
     }
     if (seams_layer_ID != -1) {
+        image_vals->seams_image_id = seams_image_ID;
+        drawable_vals->seams_layer_id = seams_layer_ID;
         gimp_display_new(seams_image_ID);
     }
 
@@ -409,8 +415,9 @@ void render(gint32 image_ID, PlugInVals *vals, PlugInImageVals *image_vals, Plug
     return;
 }
 
-void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {
+void dct_energy_preview(PlugInUIVals *ui_vals, GimpPreview  *preview) {
     
+    GimpDrawable *drawable;
     gint blocksize;
     gint x1, y1, x2, y2, width, height;
     gint i, row_number;
@@ -421,7 +428,8 @@ void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {
     guchar *output_image; //normalized energy image (for display)
     gint update_step;
 
-  
+    drawable = ui_vals->drawable;
+
     if (preview) {
         gimp_preview_get_position(preview, &x1, &y1);
         gimp_preview_get_size(preview, &width, &height);
@@ -438,7 +446,7 @@ void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {
     gimp_pixel_rgn_init(&rgn_in, drawable, x1, y1, width, height, FALSE, FALSE);
     gimp_pixel_rgn_init(&rgn_out, drawable, x1, y1, width, height, preview == NULL, TRUE);
 
-    blocksize = vals.blocksize;
+    blocksize = ui_vals->vals->blocksize;
     channels = gimp_drawable_bpp(drawable->drawable_id);
     current_rows = g_new(guchar*, blocksize);
     tmp_row = g_new(guchar, width * channels);
@@ -452,7 +460,7 @@ void dct_energy_preview(GimpDrawable *drawable, GimpPreview  *preview) {
     }
 
     for (row_number = 0; row_number < height; row_number++) { // loop on all rows in image (preview)
-        dct_energy_preview_rows(current_rows, energy_image, row_number, width);
+        dct_energy_preview_rows(ui_vals->vals, current_rows, energy_image, row_number, width);
 
         g_free(current_rows[0]);
         gimp_pixel_rgn_get_row(&rgn_in, tmp_row, x1, MIN(row_number + y1 + blocksize - (CENTER_ROW(blocksize) - 1), y1 + height - 1), width);
