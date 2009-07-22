@@ -244,7 +244,7 @@ void write_carver_to_layer(LqrCarver * r, gint32 layer_ID, gboolean progress_upd
     gint w, h;
     GimpPixelRgn rgn_out;
     guchar *out_line;
-    gint update_step;
+    gint update_step = 0;
 
     if (progress_update) {
         gimp_progress_init(("Applying changes..."));
@@ -426,7 +426,7 @@ void dct_energy_preview(PlugInUIVals *ui_vals, GimpPreview  *preview) {
     guchar **current_rows, *tmp_row; // blocksize rows from the image
     gdouble* energy_image; // Actual energy image
     guchar *output_image; //normalized energy image (for display)
-    gint update_step;
+    gint update_step = 0;
 
     drawable = ui_vals->drawable;
 

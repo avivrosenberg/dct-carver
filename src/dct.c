@@ -54,7 +54,7 @@ void ddct2d(int n1, int n2, int isgn, double **a, double *t, int *ip, double *w)
 /* End of functions prototypes from the fft2d package */
 
 gboolean is_edge_atom(gint blocksize, gint k1, gint k2) {
-    gboolean retval;
+    gboolean retval = 0;
     switch(blocksize) {
         case 2:
             retval = lut2x2[k1*blocksize + k2];
@@ -88,13 +88,13 @@ void dctNxN(int n, double **data, int* ip, double* w) {
             break;
         default:
             error("N (blocksize) wasn't a power of 2 in dctNxN");
-            exit(1);
+            //exit(1);
             break;
     }
 }
 
 gfloat weighted_max_dct_correlation(int blocksize, double** dct_data, gfloat edges, gfloat textures) {
-    int k1, k2, k1max, k2max;
+    int k1, k2, k1max = 0, k2max = 0;
     double max = 0, currval;
     
     for (k1 = 0; k1 < blocksize; k1++) {

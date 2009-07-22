@@ -1,0 +1,1 @@
+shrtdct.o: shrtdct.c

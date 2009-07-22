@@ -148,8 +148,8 @@ run(const gchar      *name,
             if (nparams != 12)
                 status = GIMP_PDB_CALLING_ERROR;
             else {
-                vals.edges = param[3].data.d_int32;
-                vals.textures = param[4].data.d_int32;
+                vals.edges = param[3].data.d_float;
+                vals.textures = param[4].data.d_float;
                 vals.blocksize = param[5].data.d_int32;
                 vals.seams_number = param[6].data.d_int32;
                 vals.new_layer = param[7].data.d_int32;
@@ -211,7 +211,7 @@ run(const gchar      *name,
             render(&vals, &image_vals, &drawable_vals);
         }
 
-        if (run_mode != GIMP_RUN_NONINTERACTIVE) {
+        if (1)/*(run_mode != GIMP_RUN_NONINTERACTIVE)*/ {
             gimp_displays_flush();
         }
 
@@ -221,6 +221,7 @@ run(const gchar      *name,
 
             gimp_drawable_detach(drawable);
         }
+
     }
 
     /*  Finally, set options in the core  
