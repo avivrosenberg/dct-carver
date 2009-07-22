@@ -31,7 +31,7 @@ const PlugInVals default_vals = {
     0.5f,   //edges
     0.5f,	//textures
     8,      //blocksize
-    20,     //seams_number
+    0,     //seams_number
     FALSE,	//new_layer
     TRUE,	//resize_canvas
     TRUE,	//output_energy

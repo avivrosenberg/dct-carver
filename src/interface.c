@@ -375,8 +375,14 @@ gui_dialog(PlugInVals *vals, PlugInImageVals *image_vals,
 	height = drawable->height;
 	seams_bound = (vals->vertically) ? height : width;
 	
+    if (vals->seams_number < (-1*seams_bound + 1)) {
+        vals->seams_number = -1*seams_bound + 1;
+    } else if (vals->seams_number > (seams_bound - 1)) {
+        vals->seams_number = seams_bound - 1;
+    }
+
     seams_number_spinbutton = gimp_spin_button_new(&seams_number_spinbutton_adj, vals->seams_number,
-                                      -1*seams_bound + 1, seams_bound, 1, 1, 0, 5, 0);
+                                      -1*seams_bound + 1, seams_bound - 1, 1, 1, 0, 5, 0);
     gtk_box_pack_start(GTK_BOX(seams_number_hbox), seams_number_spinbutton, FALSE, FALSE, 0);
     gtk_widget_show(seams_number_spinbutton);
     
@@ -577,18 +583,18 @@ void callback_update_spinbutton_boundries_vert(GtkToggleButton *toggle_button, g
 	GtkAdjustment* adj =GTK_ADJUSTMENT(ui_vals->seams_number_spinbutton_adj);
 							  	 
 	if (gtk_toggle_button_get_mode(toggle_button)) {
-		gtk_adjustment_set_lower (adj, 
-							  	 (-1*(ui_vals->height))+1);
-		gtk_adjustment_set_upper (adj, 
-							  	 (ui_vals->height));
+		gtk_adjustment_set_lower (adj, (-1*(ui_vals->height))+1);
+		gtk_adjustment_set_upper (adj, (ui_vals->height));
 		}
 	
 	value = gtk_adjustment_get_value(adj);
 	if (value < -1*(ui_vals->height) + 1) {
 		gtk_adjustment_set_value(adj, -1*(ui_vals->height) + 1);
+        ui_vals->vals->seams_number = -1*(ui_vals->height) + 1;
 		}
     if (value > (ui_vals->height)){
 		gtk_adjustment_set_value(adj, (ui_vals->height));
+        ui_vals->vals->seams_number = ui_vals->height;
 		}
 	
 }
@@ -599,18 +605,18 @@ void callback_update_spinbutton_boundries_horz(GtkToggleButton *toggle_button, g
 	GtkAdjustment* adj =GTK_ADJUSTMENT(ui_vals->seams_number_spinbutton_adj);
 							  	 
 	if (gtk_toggle_button_get_mode(toggle_button)) {
-		gtk_adjustment_set_lower (adj, 
-							  	 (-1*(ui_vals->width))+1);
-		gtk_adjustment_set_upper (adj, 
-							  	 (ui_vals->width));
+		gtk_adjustment_set_lower (adj, (-1*(ui_vals->width))+1);
+		gtk_adjustment_set_upper (adj, (ui_vals->width));
 		}
 	
 	value = gtk_adjustment_get_value(adj);
 	if (value < -1*(ui_vals->width)+1) {
 		gtk_adjustment_set_value(adj, -1*(ui_vals->width)+1);
+        ui_vals->vals->seams_number = -1*(ui_vals->width)+1;
 		}
     if (value > (ui_vals->width)){
 		gtk_adjustment_set_value(adj, (ui_vals->width));
+        ui_vals->vals->seams_number = ui_vals->width;
 		}
 }
 

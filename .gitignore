@@ -1,7 +1,7 @@
 *.swp
 Makefile 
-*/.deps
-*/.libs
+*/.deps/
+*/.libs/
 */*.l[oa]
 */*.[oa]
 autom4te.cache
